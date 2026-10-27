@@ -1,0 +1,64 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>I Built a Causal AI for Lending. The Real Finding Was That a Prompt Behaved Like a Hard Rule. · Agnes Teresa Davuri</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f7;--panel:#fff;--ink:#172036;--mute:#586178;--line:#d3d9e6;--r:#3447c9;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1424;--panel:#171d33;--ink:#eaeefb;--mute:#a1a9c4;--line:#2a3252;--r:#8fa0ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:400 18px/1.75 "Public Sans",system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:28px 20px 72px}a{color:var(--r)}
+.back{font-size:14px;text-decoration:none}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;line-height:1.15}h1{font-size:clamp(30px,6vw,46px);margin:20px 0 10px}h2{font-size:28px;margin:44px 0 8px}h3{font-size:22px}
+.sub{color:var(--mute);font-style:italic;margin:0 0 24px}
+img{max-width:100%;height:auto;border-radius:4px;display:block;margin:24px auto 6px;background:#fff}
+em{color:var(--mute)}blockquote{margin:20px 0;padding-left:16px;border-left:3px solid var(--r);color:var(--mute)}
+table{border-collapse:collapse;display:block;overflow-x:auto;font-size:15px}td,th{border:1px solid var(--line);padding:6px 10px;text-align:left}
+code{background:var(--panel);padding:1px 5px;border-radius:3px;font-size:.9em}
+</style></head><body><main>
+<a class="back" href="../../index.html#articles">← All articles</a>
+<h1>I Built a Causal AI for Lending. The Real Finding Was That a Prompt Behaved Like a Hard Rule.</h1><p class="sub">Seven runs, 589,099 real loans, and an audit that caught my own mistakes.</p>
+<p><img alt="The cliff test: how much each prompt reacts to the cutoff itself. Red means the model treats a cutoff like a cliff." src="images/01-hero-cliff-test.png" /></p>
+<p>Here is a number I did not expect to write: <strong>86</strong>.</p>
+<p>That is how many times <em>more</em> a language model's answer jumped when a loan applicant crossed a cutoff by half a point, compared with moving the same distance anywhere else. I had designed that prompt to make the model smoother. It made it the most cliff-like system in the whole project.</p>
+<p>Finding that out is the best thing that happened to Causal-RAG.</p>
+<h2>The pitch</h2>
+<p>Standard retrieval-augmented generation finds documents that look similar to your question. In lending, similar is dangerous. Similar past cases repeat past biases, and they mistake confounders for real risk drivers. A borrower with a high debt-to-income ratio also tends to have other things going on, so "similar loans defaulted" is not the same as "this clause causes default."</p>
+<p>So I built four cooperating agents:</p>
+<ol>
+<li><strong>Retriever:</strong> finds evidence, but adjusts it using a structural causal graph.</li>
+<li><strong>Causal Attribution:</strong> uses my own CALF model to estimate how much each underwriting clause (DTI above 25%, utilization above 75%, FICO below 680, loan-to-income above 20%) changes the chance of default.</li>
+<li><strong>Counterfactual Perturbation:</strong> edits the applicant or the evidence and checks whether the language model reacts the way the causal estimate says it should.</li>
+<li><strong>Synthesis &amp; Audit:</strong> outputs APPROVE, DECLINE or REFER_TO_HUMAN, with a causal graph, a JSON record and a written rationale.</li>
+</ol>
+<p><img alt="The Causal-RAG pipeline" src="images/02-pipeline-four-agents.png" /></p>
+<p>The rules were strict: real data only. 589,099 resolved 36-month Lending Club loans from 2012 to 2015, real Fannie Mae and CFPB policy text, and a real randomised experiment for validation. No synthetic data anywhere.</p>
+<p><img alt="The structural causal graph: background (Roots), environment (Soil), peers (Leaves), choices, and the outcome" src="images/03-causal-graph.png" /></p>
+<h2>What worked</h2>
+<p><strong>The causal estimates held up.</strong> For three of the four clauses, CALF's predicted effect heterogeneity was well calibrated (calibration slope 0.86 to 1.18, where 1 is perfect). A standard LightGBM approach was badly over-dispersed (slopes 0.04 to 0.27). Utilization was weak at 0.19, and I say so.</p>
+<p><strong>It matched a real experiment.</strong> There is no ground truth for individual loan effects, so I checked against the Hillstrom randomised e-mail experiment. The model's average effect of 0.066 to 0.069 sat inside the experimental interval of 0.059 [0.045, 0.073], and CALF ranked customers far better than a T-learner (Qini about 31 against 9).</p>
+<p><strong>Every refutation test passed.</strong> Placebo treatment, random common cause, subsample: all four clauses survived.</p>
+<h2>What did not work</h2>
+<p>I fed those causal estimates to a language model (Qwen2.5-7B) and measured it on 600 held-out 2015 applicants, 85 of whom defaulted.</p>
+<p><img alt="AUROC by system. Amber is the plain LLM, grey are tabular references" src="images/04-auroc-by-system.png" /></p>
+<p>The plain LLM scored an AUROC of 0.633. The Causal-RAG variants scored 0.658 to 0.678. That is a difference of 0.02 to 0.04, with p = 0.06 at best. Not significant.</p>
+<p>Then I ran the control that mattered: a prompt that only lists <em>which risk flags apply</em>, with no causal evidence at all. It scored 0.668 against the full pipeline's 0.678 (p = 0.59). <strong>The causal evidence added no measurable accuracy beyond the flags.</strong> And a plain tabular model, CALF's own risk score at 0.707, beat every language-model variant.</p>
+<h2>The cliff</h2>
+<p>A fair lending system should not treat a FICO score of 679 and 680 as different universes. So I built a <strong>local cliff test</strong>: nudge a field just across its cutoff, and compare the model's reaction with an equal nudge elsewhere. An index of 1 means smooth.</p>
+<ul>
+<li>Plain LLM: <strong>1.08</strong>, smooth.</li>
+<li>A prompt with band tables and no cutoff wording: <strong>0.73</strong>, smooth.</li>
+<li>A graded prompt: <strong>2.8</strong>, a mild cliff that remains.</li>
+<li>A prompt with only flags: <strong>5.3</strong>, a cliff.</li>
+<li>The prompt I wrote specifically to be smooth, using labels: <strong>86</strong>.</li>
+</ul>
+<p>Any prompt that describes conditions as cutoffs makes the model act like it is following a rulebook. For a regulated industry that is exactly the kind of behavior you want to know about before you deploy.</p>
+<h2>The mistake I caught in myself</h2>
+<p>My first cliff metric moved a field "just across" its cutoff from wherever it started. For an applicant far from the cutoff, that is a big jump, not a nudge, so my early readings were confounded by move size. I replaced the metric, and the new one reversed my earlier conclusion about the smooth prompt. The report lists this and several other corrections, because seven archived runs is long enough to be wrong in.</p>
+<h2>What I would tell you</h2>
+<ol>
+<li>Causal estimation on real data can be validated honestly. Feeding those estimates to a language model did not make it a better underwriter.</li>
+<li>Always run the flags-only control. It is the one that deflates most "my pipeline helped" claims.</li>
+<li>If your prompt mentions cutoffs, test whether your model now treats them as cliffs.</li>
+<li>The audit machinery, not the headline number, is the reusable contribution.</li>
+</ol>
+<p>Code: <a href="https://github.com/Davuri124/Casual-RAG">github.com/Davuri124/Casual-RAG</a> </p>
+</main></body></html>

@@ -1,0 +1,46 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>I Borrowed an Idea From Osmosis to Improve Transformers. After 11 Experiments, Mostly It Hurt. · Agnes Teresa Davuri</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f7;--panel:#fff;--ink:#172036;--mute:#586178;--line:#d3d9e6;--r:#3447c9;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1424;--panel:#171d33;--ink:#eaeefb;--mute:#a1a9c4;--line:#2a3252;--r:#8fa0ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:400 18px/1.75 "Public Sans",system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:28px 20px 72px}a{color:var(--r)}
+.back{font-size:14px;text-decoration:none}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;line-height:1.15}h1{font-size:clamp(30px,6vw,46px);margin:20px 0 10px}h2{font-size:28px;margin:44px 0 8px}h3{font-size:22px}
+.sub{color:var(--mute);font-style:italic;margin:0 0 24px}
+img{max-width:100%;height:auto;border-radius:4px;display:block;margin:24px auto 6px;background:#fff}
+em{color:var(--mute)}blockquote{margin:20px 0;padding-left:16px;border-left:3px solid var(--r);color:var(--mute)}
+table{border-collapse:collapse;display:block;overflow-x:auto;font-size:15px}td,th{border:1px solid var(--line);padding:6px 10px;text-align:left}
+code{background:var(--panel);padding:1px 5px;border-radius:3px;font-size:.9em}
+</style></head><body><main>
+<a class="back" href="../../index.html#articles">← All articles</a>
+<h1>I Borrowed an Idea From Osmosis to Improve Transformers. After 11 Experiments, Mostly It Hurt.</h1><p class="sub">A fair test of a new attention mechanism, including the one place it helped and the theory check I had to retract.</p>
+<p><img alt="The same mechanism gained from scratch and lost when injected into BERT" src="images/01-hero-same-idea-opposite-results.png" /></p>
+<p>When water crosses a membrane from a crowded side to a sparse one, we call it osmosis. I wondered if a language model's attention could work the same way: let information flow from tokens that carry a lot of it toward those that carry little.</p>
+<p>Attention, the core of every modern transformer, scores how much each word should look at every other word. I added one extra term to that score, built from how information-dense each token is (measured with Shannon entropy), a learned gate that works like a membrane, and a per-head knob that starts at zero. At zero it is mathematically identical to normal attention, which I checked with a unit test in every implementation. Any change is something the model learns, not something I forced.</p>
+<p>Then I tried to break my own idea, with 5 seeds where I could afford them, two kinds of statistical test, and 11 experimental phases.</p>
+<h4>What happened with pretrained models</h4>
+<p>I injected the mechanism into BERT and ran the standard GLUE tests. Across all five tasks, results got slightly but measurably worse. Two of five CoLA runs collapsed completely and predicted a single class. Excluding those two, the loss was about 1 point and still statistically significant (bootstrap p = 0.008). On SQuAD question-answering, the BERT version scored lower on all three seeds (F1 averaging about 73 against 78). On cross-lingual XNLI it lost 0.7 to 1.1 points in all five languages I tried. It also cost 17% more training time, 23% more inference time and 60% more memory.</p>
+<h4>The ablation that hurt</h4>
+<p>I wanted to know whether any gain came from the <em>learned</em> direction of information flow, or just from extra capacity. So I trained four versions with identical parameter counts: learned, fixed positive, fixed negative, and zero. On the task I tested (3 seeds), a fixed positive constant (0.6077) did as well as or slightly better than the learned version (0.5993). A simple, non-learned bias matched the mechanism I had designed. That undercuts the main claim.</p>
+<p><img alt="A fixed constant matched the learned mechanism" src="images/02-ablation-constant-matched-learned.png" /></p>
+<h4>The theory check I had to retract</h4>
+<p>I also tested whether the osmotic attention plan approximates optimal transport better than ordinary attention. An early, informal check said yes in 9 of 12 settings. When I redid it properly, with seeds and a two-sided method, the answer was 3 of 12. Informal checks had flattered me, and I now say so in the report.</p>
+<h4>Where it helped</h4>
+<p>It did help in three places, all in models trained from scratch rather than adjusted after pretraining:</p>
+<ul>
+<li><strong>Question answering from scratch</strong> (a pointer network on SQuAD): positive on all three seeds, an average gain of about 1 F1 point. On one seed the gain was only 0.03, so I describe it as consistent in direction and modest in size.</li>
+<li><strong>A hard long-text task:</strong> on IMDB with a from-scratch encoder, the baseline got stuck at exactly 50% (chance) while the osmotic version learned above chance (53% and 57% on the two seeds that finished). It looks like the extra term gave the model a path to learn in a setting where the standard one stalled. Only two seeds, so I treat it as a lead.</li>
+<li><strong>Image and text retrieval:</strong> in the cross-modal version (OCAM) I saw a small, steady gain in recall at 1 and 5 in both directions across three seeds.</li>
+</ul>
+<p>The pattern fits one working hypothesis: this mechanism may suit models trained with it from the start more than it suits changing a model that has already converged. That is a hypothesis, not a result.</p>
+<h4>What I would tell you</h4>
+<ol>
+<li>A new idea that never lost to a baseline in your own tests probably was not tested hard enough.</li>
+<li>Always run the ablation where you replace the clever part with a constant.</li>
+<li>Be most suspicious of your informal checks. Mine claimed 9 of 12 and the careful version found 3.</li>
+<li>"Does not help here, might help there" is a result, and it saves the next researcher weeks.</li>
+</ol>
+<p>Code: github.com/Davuri124/osmotic-attention</p>
+</main></body></html>

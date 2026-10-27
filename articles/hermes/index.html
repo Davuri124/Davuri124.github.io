@@ -1,0 +1,53 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Does a Poem Mean the Same Thing to Everyone? I Built a Model That Says No. · Agnes Teresa Davuri</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f7;--panel:#fff;--ink:#172036;--mute:#586178;--line:#d3d9e6;--r:#3447c9;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1424;--panel:#171d33;--ink:#eaeefb;--mute:#a1a9c4;--line:#2a3252;--r:#8fa0ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:400 18px/1.75 "Public Sans",system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:28px 20px 72px}a{color:var(--r)}
+.back{font-size:14px;text-decoration:none}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;line-height:1.15}h1{font-size:clamp(30px,6vw,46px);margin:20px 0 10px}h2{font-size:28px;margin:44px 0 8px}h3{font-size:22px}
+.sub{color:var(--mute);font-style:italic;margin:0 0 24px}
+img{max-width:100%;height:auto;border-radius:4px;display:block;margin:24px auto 6px;background:#fff}
+em{color:var(--mute)}blockquote{margin:20px 0;padding-left:16px;border-left:3px solid var(--r);color:var(--mute)}
+table{border-collapse:collapse;display:block;overflow-x:auto;font-size:15px}td,th{border:1px solid var(--line);padding:6px 10px;text-align:left}
+code{background:var(--panel);padding:1px 5px;border-radius:3px;font-size:.9em}
+</style></head><body><main>
+<a class="back" href="../../index.html#articles">← All articles</a>
+<h1>Does a Poem Mean the Same Thing to Everyone? I Built a Model That Says No.</h1><p class="sub">HERMES models the reader, not just the text, and it found something surprising about Tamil poetry.</p>
+<p><img alt="Verse pairs from different traditions that HERMES found most alike" src="images/01-hero-poems-that-rhyme-across-cultures.png" /></p>
+<p>A poem about longing means one thing to someone who has just lost a person they love and another to a student in a philosophy seminar. Every literature teacher knows this. Almost every language model ignores it: it reads the verse and produces the same meaning for everybody.</p>
+<p>In my last project, QuLit, I represented a poem as a set of coexisting meanings and let a "context" label such as <em>grief</em> pick one. But grief there was just a switch. HERMES replaces the switch with a person.</p>
+<h4>Who is reading?</h4>
+<p>HERMES describes a reader with three things:</p>
+<ul>
+<li><strong>Culture:</strong> one of 20 traditions, from Urdu classical to Tamil Sangam to English Romantic.</li>
+<li><strong>Time:</strong> one of 10 historical periods.</li>
+<li><strong>Mood:</strong> how strongly 12 emotions (grief, longing, joy, rebellion and others) are active.</li>
+</ul>
+<p>All three are combined into one 64-number profile. The system then reads a verse <em>through</em> that profile and produces a 128-number meaning that belongs to that reader. Change the reader, and the meaning moves.</p>
+<p>It also scores how ambiguous a verse is <em>for that reader</em>. The same line can be wide open to a literal reader and fairly direct to a Sufi scholar.</p>
+<h4>What worked</h4>
+<ul>
+<li><strong>Telling readers apart.</strong> The profile encoder identified the reader's context 99.49% of the time, and different readers landed in clean, separate clusters (silhouette score 0.74).</li>
+<li><strong>The reader really matters.</strong> Removing the reader profile cut accuracy on my interpretation task from 74.5% to 62.6%. In an ablation of seven versions, every component I removed hurt.</li>
+<li><strong>Finding poems that say the same thing.</strong> Across all 98 verses in 6 languages, HERMES found thematic twins that match what readers already feel: Ghalib and the Sufi mystic Al-Hallaj, both writing about loving something until it destroys you; Kabir and the Upanishads on the self you seek being the self that seeks. Its similarity score correlated at 0.79 with my reference measure, a little above plain mBERT at 0.75.</li>
+</ul>
+<p><img alt="Removing any component lowered interpretation accuracy; removing the reader profile cost about 12 points" src="images/02-ablation-reader-matters.png" /></p>
+<h4>The discovery I did not expect</h4>
+<p>In the network of cross-cultural matches, the most connected poets were Tamil: Kaniyan Pungundranar ("every place is my hometown, every person is my kin") and Thiruvalluvar. They align with Sanskrit, Arabic, English and Urdu verses at the same time. It suggests the Tamil Sangam tradition has a breadth that computational literary studies has underrated. This is a pattern in a corpus of 98 verses that I built and chose, so I treat it as a question worth asking, not a conclusion.</p>
+<h4>What did not work</h4>
+<p>I would rather you hear these from me.</p>
+<ol>
+<li><strong>The writing part collapsed.</strong> I asked a small language model to write a reader-specific interpretation. In one test run, 7 out of 10 different verses produced the same sentence about a poet commanding himself. The meaning vectors were fine; the writer was too small to turn them into varied words.</li>
+<li><strong>The ambiguity score does not match human judgment yet.</strong> Correlation with human ratings of ambiguity was 0.14, with p = 0.15: not significant.</li>
+<li><strong>At ranking, mBERT wins.</strong> Finding the right cross-cultural match as the <em>first</em> result: HERMES 0.20, mBERT 0.60. By the top 3 and top 5 they tie (0.60 and 0.80).</li>
+<li><strong>One test points the wrong way.</strong> A direction check on whether meaning shifts the right way when the reader changes gave 36.2%, barely above chance at 33.3%, and removing the reader profile <em>raised</em> it to 41.3%. I suspect how I built the training targets, and I have not fixed it.</li>
+<li><strong>No human evaluation yet.</strong> The survey is ready, with 14 verse pairs, but I only have one annotator so far, so I cannot compute agreement.</li>
+</ol>
+<p><img alt="Where HERMES lost: ranking the right match first" src="images/03-where-it-lost-retrieval.png" /></p>
+<h4>Why I publish the failures</h4>
+<p>HERMES is a prototype on 98 verses. It proves the reader can be a first-class part of a meaning model, and it shows which parts need more data and more people. If you work on language models and literature, the most useful thing here may be the list of what broke.</p>
+<p>Code: github.com/Davuri124/HERMES</p>
+</main></body></html>

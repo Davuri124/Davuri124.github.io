@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Noise-Optimal Grover: interactive demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,700&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef2f5;--panel:#fff;--ink:#1b2a3a;--mute:#56677a;--line:#cfd8e0;--ideal:#7a8b9b;--noisy:#0f7f8c;--kstar:#c8791a;--hw:#9a6b00;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#10181f;--panel:#17212b;--ink:#e6edf3;--mute:#9aa9b7;--line:#2b3a47;--ideal:#8a9bab;--noisy:#3fc1cf;--kstar:#f0a64a;--hw:#e8c25a}}
+:root[data-theme="dark"]{--bg:#10181f;--panel:#17212b;--ink:#e6edf3;--mute:#9aa9b7;--line:#2b3a47;--ideal:#8a9bab;--noisy:#3fc1cf;--kstar:#f0a64a;--hw:#e8c25a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:880px;margin:0 auto;padding:32px 20px 48px}
+h1{font:700 clamp(28px,5vw,42px)/1.15 Newsreader,Georgia,serif;margin:0 0 12px;max-width:20ch}
+h2{font:700 22px/1.25 Newsreader,Georgia,serif;margin:32px 0 8px}
+.lede{color:var(--mute);max-width:62ch;margin:0 0 20px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.presets button{font:500 14px "IBM Plex Sans",sans-serif;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer}
+.presets button[aria-pressed=true]{background:var(--noisy);border-color:var(--noisy);color:#fff}
+button:focus-visible,input:focus-visible{outline:2px solid var(--kstar);outline-offset:2px}
+.chartwrap{overflow-x:auto}
+svg{width:100%;height:auto;display:block;min-width:520px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--mute);margin:6px 0 0}
+.legend i{display:inline-block;width:18px;height:0;border-top:3px solid;vertical-align:middle;margin-right:6px}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:16px 0}
+label{display:block;font-weight:500;font-size:14px}
+label output{float:right;color:var(--mute);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--noisy);margin-top:6px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:16px 0}
+.stat{border-left:3px solid var(--line);padding-left:10px}
+.stat.k{border-color:var(--kstar)}.stat.n{border-color:var(--noisy)}
+.stat b{display:block;font:700 26px/1.2 Newsreader,Georgia,serif;font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--mute)}
+.note{font-size:14px;color:var(--mute);max-width:70ch}
+.results{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.results div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+.results b{display:block;font:700 24px/1.2 Newsreader,Georgia,serif}
+.results span{font-size:13px;color:var(--mute)}
+text{fill:var(--mute);font:12px "IBM Plex Sans",sans-serif}
+a{color:var(--noisy)}
+</style>
+</head>
+<body>
+<main>
+<h1>More Grover iterations can make the answer worse.</h1>
+<p class="lede">Textbook Grover search runs about π√N/4 iterations. On noisy hardware every iteration adds error, so the best stopping point k* comes earlier. Pick a hardware run below, or move the sliders.</p>
+
+<div class="panel">
+  <div class="presets" id="presets" role="group" aria-label="Hardware presets"></div>
+  <div class="chartwrap"><svg id="chart" viewBox="0 0 760 340" role="img" aria-label="Success probability versus Grover iterations: noiseless, noisy model, and hardware"></svg></div>
+  <div class="legend">
+    <span><i style="border-color:var(--ideal);border-top-style:dashed"></i>no noise</span>
+    <span><i style="border-color:var(--noisy)"></i>noisy model P(k)</span>
+    <span><i style="border-color:var(--kstar)"></i>k*</span>
+    <span id="hwLeg" hidden><i style="border-color:var(--hw)"></i>ibm_fez hardware, mean ± 95% CI</span>
+  </div>
+  <div class="controls">
+    <label>Qubits <output id="nO"></output><input id="n" type="range" min="3" max="16" step="1" value="4"></label>
+    <label>Error per gate ε <output id="eO"></output><input id="e" type="range" min="-5" max="-2.5" step="any" value="-3.527"></label>
+    <label>Transpiled gates per iteration g <output id="gO"></output><input id="g" type="range" min="10" max="1500" step="1" value="1265"></label>
+  </div>
+  <div class="stats" aria-live="polite">
+    <div class="stat"><b id="sKi"></b><span>Textbook iterations</span></div>
+    <div class="stat k"><b id="sKs"></b><span>k* from Eq. 6 (numerical)</span></div>
+    <div class="stat k"><b id="sKa"></b><span>k* from Eq. 7 (closed form)</span></div>
+    <div class="stat"><b id="sPi"></b><span id="sPiL">Success at textbook count</span></div>
+    <div class="stat n"><b id="sPs"></b><span id="sPsL">Success at best whole k</span></div>
+    <div class="stat n"><b id="sGfs"></b><span>Grover Fidelity Score</span></div>
+  </div>
+  <p class="note">Model: P(k) = λ<sup>k</sup> sin²((2k+1)θ) + (1 − λ<sup>k</sup>)/N with λ = (1 − ε)<sup>g</sup> and θ = arcsin(1/√N) (Theorem 4.2). k* solves the optimality equation (Theorem 4.4); Eq. 7 is the asymptotic form (Corollary 4.7). Whole-number k* is the better of the two integers around k*, and GFS = P(k*, ε) / P<sub>ideal</sub>(k<sub>ideal</sub>). Presets use ε and g from the paper's Table 5.</p>
+</div>
+
+<h2>Measured on IBM hardware</h2>
+<div class="results">
+  <div><b>280+</b><span>circuit executions on ibm_fez and ibm_kingston (156-qubit Heron r2)</span></div>
+  <div><b>+28.4%</b><span>success probability at k* = 2 vs k = 3, n = 4, ibm_fez</span></div>
+  <div><b>2.4%</b><span>gap between Eq. 7 and numerical k*, n = 4</span></div>
+  <div><b>0.815 / 0.830</b><span>GFS at n = 3: ibm_fez / ibm_kingston</span></div>
+</div>
+<p class="note" style="margin-top:16px">Code and write-up: <a href="https://github.com/Davuri124/Grover-Algorithm-on-NISQ-devices">Davuri124/Grover-Algorithm-on-NISQ-devices</a></p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const HW={3:{P:[.653,.725,.253,.056,.382,.577],E:[.007,.007,.012,.007,.016,.013]},
+          4:{P:[.351,.462,.359,.178,.069,.066,.079,.080],E:[.026,.077,.057,.034,.012,.006,.024,.016]}};
+const PRE=[{id:'f3',label:'ibm_fez · n=3',n:3,g:409,e:2.94e-4,hw:3},
+           {id:'f4',label:'ibm_fez · n=4',n:4,g:1265,e:2.97e-4,hw:4},
+           {id:'k3',label:'ibm_kingston · n=3',n:3,g:409,e:2.67e-4},
+           {id:'k4',label:'ibm_kingston · n=4',n:4,g:1265,e:1.78e-4}];
+let active='f4';
+
+function calc(n,eps,g){
+  const N=Math.pow(2,n),th=Math.asin(1/Math.sqrt(N)),lam=Math.pow(1-eps,g),ll=Math.log(lam);
+  const kIc=Math.PI/(4*th)-0.5,kI=Math.floor(Math.PI*Math.sqrt(N)/4);
+  const Pi=k=>Math.pow(Math.sin((2*k+1)*th),2);
+  const P=k=>Math.pow(lam,k)*Pi(k)+(1-Math.pow(lam,k))/N;
+  let a=0,b=kIc;const r=0.6180339887;
+  for(let i=0;i<80;i++){const c=b-r*(b-a),d=a+r*(b-a);if(P(c)>P(d))b=d;else a=c}
+  const ks=(a+b)/2,kA=Math.atan(4*th/Math.abs(ll))/(2*th)-0.5;
+  const cand=[Math.max(1,Math.floor(ks)),Math.max(1,Math.ceil(ks))];
+  const ki=P(cand[0])>=P(cand[1])?cand[0]:cand[1];
+  return {N,th,kIc,kI,ks,kA,ki,P,Pi,gfs:P(ki)/Pi(kI)};
+}
+
+function draw(){
+  const n=+$('n').value,eps=Math.pow(10,+$('e').value),g=+$('g').value,c=calc(n,eps,g);
+  const pre=PRE.find(p=>p.id===active),hw=pre&&pre.hw?HW[pre.hw]:null;
+  $('nO').textContent=n+' (N = '+c.N.toLocaleString()+')';
+  $('eO').textContent=(eps*1e4).toFixed(2)+' × 10⁻⁴';
+  $('gO').textContent=g;
+  $('sKi').textContent=c.kI;
+  $('sKs').textContent=c.ks.toFixed(2);
+  $('sKa').textContent=c.kA.toFixed(2);
+  $('sPi').textContent=(c.P(c.kI)*100).toFixed(1)+'%';
+  $('sPiL').textContent='Model success at k = '+c.kI;
+  $('sPs').textContent=(c.P(c.ki)*100).toFixed(1)+'%';
+  $('sPsL').textContent='Model success at k = '+c.ki;
+  $('sGfs').textContent=c.gfs.toFixed(3);
+  $('hwLeg').hidden=!hw;
+  const W=760,H=340,L=48,R=16,T=16,B=40,pw=W-L-R,ph=H-T-B;
+  const xmax=Math.max(1.6*c.kIc+1,hw?hw.P.length+0.6:0);
+  const X=k=>L+k/xmax*pw,Y=p=>T+(1-p)*ph;
+  let s='';
+  for(let i=0;i<=4;i++){const p=i/4;s+=`<line x1="${L}" x2="${W-R}" y1="${Y(p)}" y2="${Y(p)}" stroke="var(--line)"/><text x="${L-8}" y="${Y(p)+4}" text-anchor="end">${(p*100)|0}%</text>`}
+  const st=xmax<=10?1:Math.ceil(xmax/8);
+  for(let k=0;k<=xmax;k+=st)s+=`<text x="${X(k)}" y="${H-18}" text-anchor="middle">${k}</text>`;
+  s+=`<text x="${L+pw/2}" y="${H-2}" text-anchor="middle">Grover iterations k</text>`;
+  s+=`<line x1="${L}" x2="${W-R}" y1="${Y(1/c.N)}" y2="${Y(1/c.N)}" stroke="var(--mute)" stroke-dasharray="1 4"/>`;
+  const pts=320,pa=[],pb=[];
+  for(let i=0;i<=pts;i++){const k=xmax*i/pts;pa.push((i?'L':'M')+X(k).toFixed(1)+' '+Y(c.Pi(k)).toFixed(1));pb.push((i?'L':'M')+X(k).toFixed(1)+' '+Y(c.P(k)).toFixed(1))}
+  s+=`<path d="${pa.join('')}" fill="none" stroke="var(--ideal)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+  s+=`<path d="${pb.join('')}" fill="none" stroke="var(--noisy)" stroke-width="3"/>`;
+  s+=`<line x1="${X(c.kI)}" x2="${X(c.kI)}" y1="${T}" y2="${T+ph}" stroke="var(--ideal)" stroke-dasharray="2 3"/><text x="${X(c.kI)+5}" y="${T+12}">textbook k = ${c.kI}</text>`;
+  s+=`<line x1="${X(c.ks)}" x2="${X(c.ks)}" y1="${T}" y2="${T+ph}" stroke="var(--kstar)" stroke-width="2"/>`;
+  const left=c.ks<c.kI;
+  s+=`<text x="${X(c.ks)+(left?-5:5)}" y="${T+28}" text-anchor="${left?'end':'start'}" style="fill:var(--kstar)">k* = ${c.ks.toFixed(2)}</text>`;
+  if(hw)hw.P.forEach((p,i)=>{const k=i+1,e=hw.E[i];
+    s+=`<line x1="${X(k)}" x2="${X(k)}" y1="${Y(p-e)}" y2="${Y(p+e)}" stroke="var(--hw)" stroke-width="2"/><circle cx="${X(k)}" cy="${Y(p)}" r="4.5" fill="var(--hw)"/>`});
+  $('chart').innerHTML=s;
+}
+function sync(){document.querySelectorAll('#presets button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.id===active))}
+PRE.forEach(p=>{const b=document.createElement('button');b.textContent=p.label;b.dataset.id=p.id;
+  b.onclick=()=>{active=p.id;$('n').value=p.n;$('g').value=p.g;$('e').value=Math.log10(p.e);sync();draw()};
+  $('presets').appendChild(b)});
+['n','e','g'].forEach(i=>$(i).addEventListener('input',()=>{active=null;sync();draw()}));
+sync();draw();
+</script>
+<style>.homepill{position:fixed;left:max(14px,env(safe-area-inset-left,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));z-index:50;font:500 13px "IBM Plex Sans",system-ui,sans-serif;text-decoration:none;color:var(--ink,#111);background:var(--panel,#fff);border:1px solid var(--line,#ccc);padding:7px 14px;border-radius:999px;box-shadow:0 4px 18px rgba(0,0,0,.18)}.homepill:hover{border-color:var(--ink,#111)}</style>
+<a class="homepill" href="../index.html">&larr; All projects</a>
+</body>
+</html>

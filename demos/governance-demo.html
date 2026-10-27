@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Predictive Quantum Governance: an interactive tour</title>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,700&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef0f4;--panel:#fff;--ink:#16203a;--mute:#5b6580;--line:#d6dbe6;--a:#d88a1a;--b:#1f6f8b;--c:#2f8f6b;--bad:#b83a3a;
+--m:#16203a;--v:#6c7aa0;--s:#8d9ac0;--am:#d88a1a;--p:#b83a3a;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#10141f;--panel:#171d2d;--ink:#e8ecf6;--mute:#a1abc4;--line:#2b3450;--a:#f0aa4a;--b:#5bb4d1;--c:#5cc79d;--bad:#f08888;--m:#e8ecf6;--v:#8a98c2;--s:#6a7aa6;--am:#f0aa4a;--p:#f08888}}
+:root[data-theme="dark"]{--bg:#10141f;--panel:#171d2d;--ink:#e8ecf6;--mute:#a1abc4;--line:#2b3450;--a:#f0aa4a;--b:#5bb4d1;--c:#5cc79d;--bad:#f08888;--m:#e8ecf6;--v:#8a98c2;--s:#6a7aa6;--am:#f0aa4a;--p:#f08888}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:920px;margin:0 auto;padding:32px 20px 48px}
+h1{font:700 clamp(28px,5vw,42px)/1.15 Newsreader,Georgia,serif;margin:0 0 12px;max-width:21ch}
+h2{font:700 22px/1.25 Newsreader,Georgia,serif;margin:30px 0 8px}
+.lede,.note{color:var(--mute);max-width:68ch}.note{font-size:14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:12px 0}
+.card{border-left:3px solid var(--b);padding-left:10px}.card b{display:block;font:700 24px/1.2 Newsreader,Georgia,serif;font-variant-numeric:tabular-nums}.card span{font-size:13px;color:var(--mute)}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;align-items:center}
+button{font:500 14px "IBM Plex Sans",sans-serif;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer}
+button[aria-pressed=true]{background:var(--b);border-color:var(--b);color:#fff}
+button:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px 24px}
+label{display:block;font-weight:500;font-size:14px}label output{float:right;color:var(--mute);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--b);margin-top:6px}input[type=checkbox]{accent-color:var(--b)}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px}
+.stack{display:flex;height:22px;border-radius:5px;overflow:hidden;background:color-mix(in srgb,var(--line) 50%,transparent);margin:6px 0}
+.stack i{display:block;height:100%}
+.lg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--mute)}.lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.bars div{display:grid;grid-template-columns:170px 1fr 70px;gap:8px;align-items:center;font-size:13px;margin:4px 0}
+.bt{position:relative;height:12px;background:color-mix(in srgb,var(--line) 60%,transparent);border-radius:3px}.bt i{position:absolute;top:0;left:0;height:12px;border-radius:3px}
+.bars span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:14px}td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}td:first-child,th:first-child{text-align:left}.sc{overflow-x:auto}
+.ok{color:var(--c)}.no{color:var(--bad)}
+.warn{border-left:3px solid var(--bad);padding-left:12px;font-size:14px;color:var(--mute);margin:10px 0}
+a{color:var(--b)}
+</style>
+</head>
+<body>
+<main>
+<h1>A pipeline that asks how much it trusts itself.</h1>
+<p class="lede">The Governance Confidence Index turns five kinds of risk into one number, GCI = 1 − R, and the pipeline changes what it does when that number drops. The thesis runs it on five real datasets, from 1,465 to 1,000,000 records.</p>
+<div class="cards">
+  <div class="card"><b>5 datasets</b><span>reviews, retail, ICU, fraud, multivendor</span></div>
+  <div class="card"><b>411 runs</b><span>longitudinal orchestration events</span></div>
+  <div class="card" style="border-color:var(--a)"><b>17.2%</b><span>median risk reduction across datasets</span></div>
+  <div class="card" style="border-color:var(--bad)"><b>27.4%</b><span>mean, lifted by one dataset</span></div>
+</div>
+
+<h2>Build a GCI</h2>
+<div class="panel">
+  <div class="row" id="pre" role="group" aria-label="Dataset presets"></div>
+  <div class="g">
+    <label>Maturity risk R<sub>m</sub> <output id="o0"></output><input id="r0" type="range" min="0" max="1" step="0.0001"></label>
+    <label>Volatility risk R<sub>v</sub> <output id="o1"></output><input id="r1" type="range" min="0" max="1" step="0.0001"></label>
+    <label>Stability risk R<sub>s</sub> <output id="o2"></output><input id="r2" type="range" min="0" max="1" step="0.0001"></label>
+    <label>Amplification risk R<sub>a</sub> <output id="o3"></output><input id="r3" type="range" min="0" max="1" step="0.0001"></label>
+  </div>
+  <div class="row"><span class="chk"><input type="checkbox" id="pf"><label for="pf" style="font-weight:400">Predictive instability flag (R<sub>p</sub> = 1)</label></span>
+    <span class="chk"><input type="checkbox" id="ad"><label for="ad" style="font-weight:400">Amplification instability detected</label></span></div>
+  <div class="row"><button id="w1" aria-pressed="true">Weights as used in the production run</button><button id="w2" aria-pressed="false">Standard weights (0.30 / 0.20 / 0.15 / 0.20 / 0.15)</button></div>
+  <div class="stack" id="stk" role="img" aria-label="Weighted risk contributions"></div>
+  <div class="lg"><span><i style="background:var(--m)"></i>maturity</span><span><i style="background:var(--v)"></i>volatility</span><span><i style="background:var(--s)"></i>stability</span><span><i style="background:var(--am)"></i>amplification</span><span><i style="background:var(--p)"></i>predictive</span></div>
+  <div class="cards" aria-live="polite">
+    <div class="card" style="border-color:var(--c)"><b id="gci"></b><span>GCI</span></div>
+    <div class="card"><b id="rr"></b><span>weighted risk R</span></div>
+    <div class="card"><b id="sla1"></b><span>R ≤ 0.25 (SLA)</span></div>
+    <div class="card"><b id="sla2"></b><span>amplification ≤ 0.35 (SLA)</span></div>
+  </div>
+  <div class="row"><b style="font-size:14px">Intervention</b><button id="i1" aria-pressed="true">Stable window: standard dampening</button><button id="i2" aria-pressed="false">EXTREME storm: throttle 0.5, drop high-risk nodes</button></div>
+  <div class="cards"><div class="card" style="border-color:var(--a)"><b id="ra"></b><span>risk after the intervention</span></div><div class="card" style="border-color:var(--a)"><b id="rd"></b><span>reduction</span></div></div>
+  <p class="note" style="margin:0">Presets are Table 17.2 and reproduce its GCI values. The intervention factors are the thesis's reported constants (15% and 73.1%), not a simulation of the storm layer.</p>
+</div>
+
+<h2>Results</h2>
+<div class="panel">
+  <div class="row" id="tabs" role="group" aria-label="Results"></div>
+  <p class="note" id="cap" style="margin:4px 0 8px"></p><div id="body"></div>
+</div>
+
+<h2>How to read the risk-reduction number</h2>
+<div class="panel">
+  <p class="note" style="margin:0 0 6px">Table 17.15, mean risk reduction per dataset over 411 runs. Untick a dataset to see what the portfolio average does.</p>
+  <div id="chk"></div><div class="bars" id="rrb"></div>
+  <div class="cards"><div class="card" style="border-color:var(--bad)"><b id="mn"></b><span>mean of selected datasets</span></div><div class="card"><b id="md"></b><span>median of selected</span></div></div>
+</div>
+
+<h2>What these numbers do not show</h2>
+<div class="warn">Risk reduction is measured on the framework's own risk score. In the stable window the reduction is a fixed 15% dampening, so it is built in rather than observed, and no downstream outcome is measured: fraud caught, patients flagged or fake reviews removed. All five datasets also broke their auto-generated SLAs.</div>
+<p class="note">Code and write-up: <a href="https://github.com/Davuri124/Metadata_Orchestration_Pipeline">Davuri124/Metadata_Orchestration_Pipeline</a></p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+/*GCI*/
+const STD=[.30,.20,.15,.20,.15],PROD=[3/11,2/11,1.5/11,3/11,1.5/11];
+function boost(w,i){const t=Math.min(.9,2*w[i]),rest=1-w[i];return w.map((v,k)=>k===i?t:v*(1-t)/rest)}
+function gci(R,prodW,pf,ad){let w=(prodW?PROD:STD).slice();if(ad)w=boost(w,3);if(pf)w=boost(w,4);const r=R.slice(0,4).concat([pf?1:0]),parts=w.map((x,i)=>x*r[i]),tot=parts.reduce((a,b)=>a+b,0);return{w,parts,R:tot,gci:1-tot}}
+/*ENDGCI*/
+const DS=[['Amazon Product Reviews',[.4,0,0,.8724],.6530],['Online Retail',[.4,0,0,.6480],.7142],['MIMIC ICU',[.405,0,0,.7171],.6940],['IEEE Fraud',[.4,0,0,.7822],.6776],['Amazon Multivendor',[.403,0,0,.7914],.6742]];
+let prod=true,storm=false,pn=0;
+DS.forEach((d,i)=>{const b=document.createElement('button');b.textContent=d[0];b.onclick=()=>{pn=i;d[1].forEach((v,k)=>$('r'+k).value=v);$('pf').checked=false;$('ad').checked=false;prod=true;calc()};$('pre').appendChild(b)});
+DS[0][1].forEach((v,k)=>$('r'+k).value=v);
+function calc(){const R=[0,1,2,3].map(i=>+$('r'+i).value),pf=$('pf').checked,ad=$('ad').checked,o=gci(R,prod,pf,ad);
+  [0,1,2,3].forEach(i=>$('o'+i).textContent=R[i].toFixed(4));
+  $('stk').innerHTML=o.parts.map((p,i)=>`<i title="${p.toFixed(4)}" style="width:${(p*100).toFixed(2)}%;background:var(--${['m','v','s','am','p'][i]})"></i>`).join('');
+  $('gci').textContent=o.gci.toFixed(4);$('rr').textContent=o.R.toFixed(4);
+  const f=(el,ok)=>{$(el).textContent=ok?'pass':'violated';$(el).className=ok?'ok':'no'};f('sla1',o.R<=0.25);f('sla2',R[3]<=0.35);
+  const fac=storm?0.269:0.85,after=o.R*fac;$('ra').textContent=after.toFixed(4);$('rd').textContent=((1-fac)*100).toFixed(1)+'%';
+  $('w1').setAttribute('aria-pressed',prod);$('w2').setAttribute('aria-pressed',!prod);$('i1').setAttribute('aria-pressed',!storm);$('i2').setAttribute('aria-pressed',storm);
+  document.querySelectorAll('#pre button').forEach((b,i)=>b.setAttribute('aria-pressed',i===pn))}
+[0,1,2,3].forEach(i=>$('r'+i).addEventListener('input',()=>{pn=-1;calc()}));['pf','ad'].forEach(i=>$(i).addEventListener('change',calc));
+$('w1').onclick=()=>{prod=true;calc()};$('w2').onclick=()=>{prod=false;calc()};$('i1').onclick=()=>{storm=false;calc()};$('i2').onclick=()=>{storm=true;calc()};
+const bar=(rows,o)=>`<div class="bars">${rows.map(r=>`<div><span>${r[0]}</span><span class="bt"><i style="width:${Math.max(.5,(r[1]-(o.min||0))/(o.max-(o.min||0))*100).toFixed(1)}%;background:var(--${r[2]||'b'})"></i></span><span>${o.f?o.f(r[1]):r[1].toFixed(4)}</span></div>`).join('')}</div>`;
+const AB=[['Full system',.6741,29.62,1341],['No quantum',.6840,27.61,2393],['No DAG healing',.6618,29.47,2813],['No feedback',.6816,27.61,1216],['No causal detection',.6766,28.61,10668],['No storm detection',.6761,16.00,2537],['Fixed rule baseline',.6942,15.00,1226],['Probabilistic baseline',.6838,27.61,1035]];
+const E={
+'Datasets':()=>({cap:'Tables 17.1 and 17.2. The recomputed GCI uses the production weights and the printed risk components.',html:`<div class="sc"><table><tr><th>Dataset</th><th>Records</th><th>GCI reported</th><th>GCI recomputed</th><th>Amplification risk</th></tr>${[['Amazon Product Reviews','1,465',0],['Online Retail','541,910',1],['MIMIC ICU','51,257',2],['IEEE Fraud','590,540',3],['Amazon Multivendor','1,000,000',4]].map(r=>{const d=DS[r[2]],o=gci(d[1].concat([0]),true,false,false);return`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${d[2].toFixed(4)}</td><td>${o.gci.toFixed(4)}</td><td>${d[1][3].toFixed(4)}</td></tr>`}).join('')}</table></div><p class="note" style="margin:8px 0 0">Amplification risk is the largest term in every dataset (58% to 77% of R). For ICU and fraud data, which have no engagement signals, it is a proxy built from domain-confidence variance.</p>`}),
+'Interventions':()=>({cap:'Table 17.3. Risk before and after governance interventions, production run.',html:`<div class="sc"><table><tr><th>Dataset</th><th>Before</th><th>After</th><th>Reduction</th><th>Mechanism</th></tr><tr><td>Amazon Product Reviews</td><td>0.347</td><td>0.094</td><td>73.1%</td><td>storm throttle + safe mode</td></tr>${['Online Retail|0.286|0.243','MIMIC ICU|0.306|0.260','IEEE Fraud|0.322|0.274','Amazon Multivendor|0.326|0.277'].map(s=>{const p=s.split('|');return`<tr><td>${p[0]}</td><td>${p[1]}</td><td>${p[2]}</td><td>15.0%</td><td>standard dampening</td></tr>`}).join('')}</table></div><p class="note" style="margin:8px 0 0">Only the Amazon reviews run triggered the EXTREME storm class (forecast probability 1.0). The other four get the same 15.0% every time.</p>`}),
+'Ablation':()=>({cap:'Table 17.13. Seven configurations, three runs each. Bars show portfolio risk reduction (%).',html:bar(AB.map(r=>[r[0],r[2],r[0]==='Full system'?'a':'b']),{max:32,f:v=>v.toFixed(2)+'%'})+`<div class="sc" style="margin-top:10px"><table><tr><th>Configuration</th><th>Mean GCI</th><th>Runtime (s)</th></tr>${AB.map(r=>`<tr><td>${r[0]}</td><td class="${r[1]>.6741?'no':''}">${r[1].toFixed(4)}</td><td>${r[3].toLocaleString()}</td></tr>`).join('')}</table></div><p class="note" style="margin:8px 0 0">Red GCI means higher than the full system. Switching components off raises GCI in five of seven cases, and the fixed baseline has the highest GCI of all. The thesis reads this as the full system "actively governing"; it also means higher GCI is not evidence of better governance. Storm detection explains almost all of the risk-reduction gap (13.62 points).</p>`})};
+let cur='Datasets';
+function tab(){const e=E[cur]();$('cap').textContent=e.cap;$('body').innerHTML=e.html;document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-pressed',b.textContent===cur))}
+Object.keys(E).forEach(k=>{const b=document.createElement('button');b.textContent=k;b.onclick=()=>{cur=k;tab()};$('tabs').appendChild(b)});
+const LR=[['Amazon Product Reviews',68.8],['Online Retail',16.6],['MIMIC ICU',17.0],['IEEE Fraud',17.2],['Amazon Multivendor',17.5]],on=[1,1,1,1,1];
+$('chk').innerHTML=LR.map((r,i)=>`<span class="chk" style="display:inline-flex;margin-right:14px"><input type="checkbox" id="c${i}" checked><label for="c${i}" style="font-weight:400">${r[0]}</label></span>`).join('');
+function rr(){LR.forEach((r,i)=>on[i]=$('c'+i).checked?1:0);const v=LR.filter((r,i)=>on[i]).map(r=>r[1]).sort((a,b)=>a-b);
+  $('rrb').innerHTML=bar(LR.map((r,i)=>[r[0],on[i]?r[1]:0,i?'b':'a']),{max:75,f:v=>v?v.toFixed(1)+'%':'off'});
+  $('mn').textContent=v.length?(v.reduce((a,b)=>a+b,0)/v.length).toFixed(1)+'%':'–';$('md').textContent=v.length?(v.length%2?v[(v.length-1)/2]:(v[v.length/2-1]+v[v.length/2])/2).toFixed(1)+'%':'–'}
+LR.forEach((r,i)=>$('c'+i).addEventListener('change',rr));
+calc();tab();rr();
+</script>
+<style>.homepill{position:fixed;left:max(14px,env(safe-area-inset-left,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));z-index:50;font:500 13px "IBM Plex Sans",system-ui,sans-serif;text-decoration:none;color:var(--ink,#111);background:var(--panel,#fff);border:1px solid var(--line,#ccc);padding:7px 14px;border-radius:999px;box-shadow:0 4px 18px rgba(0,0,0,.18)}.homepill:hover{border-color:var(--ink,#111)}</style>
+<a class="homepill" href="../index.html">&larr; All projects</a>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The textbook says run it three times. On a real quantum computer, twice works 28% better. · Agnes Teresa Davuri</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f7;--panel:#fff;--ink:#172036;--mute:#586178;--line:#d3d9e6;--r:#3447c9;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1424;--panel:#171d33;--ink:#eaeefb;--mute:#a1a9c4;--line:#2a3252;--r:#8fa0ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:400 18px/1.75 "Public Sans",system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:28px 20px 72px}a{color:var(--r)}
+.back{font-size:14px;text-decoration:none}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;line-height:1.15}h1{font-size:clamp(30px,6vw,46px);margin:20px 0 10px}h2{font-size:28px;margin:44px 0 8px}h3{font-size:22px}
+.sub{color:var(--mute);font-style:italic;margin:0 0 24px}
+img{max-width:100%;height:auto;border-radius:4px;display:block;margin:24px auto 6px;background:#fff}
+em{color:var(--mute)}blockquote{margin:20px 0;padding-left:16px;border-left:3px solid var(--r);color:var(--mute)}
+table{border-collapse:collapse;display:block;overflow-x:auto;font-size:15px}td,th{border:1px solid var(--line);padding:6px 10px;text-align:left}
+code{background:var(--panel);padding:1px 5px;border-radius:3px;font-size:.9em}
+</style></head><body><main>
+<a class="back" href="../../index.html#articles">← All articles</a>
+<h1>The textbook says run it three times. On a real quantum computer, twice works 28% better.</h1><p class="sub">What I learned running Grover's algorithm on two 156-qubit IBM machines, and the small formula that predicts when to stop.</p>
+<p><img alt="Success probability against Grover iterations on ibm_fez: two steps beat the textbook three" src="images/01-hero-two-steps-beat-three.png" /></p>
+<p>Every quantum computing course teaches the same promise: Grover's algorithm finds a needle in an unsorted haystack in far fewer steps than any normal computer. Search 16 items and the textbook says to repeat the algorithm's core step exactly three times.</p>
+<p>I ran it on a real IBM quantum computer. Three repeats gave the right answer 35.9% of the time. Two repeats gave it 46.2% of the time. Doing <em>less</em> work was about 28% better.</p>
+<p>That gap is what my paper is about.</p>
+<h4>Why more steps can make things worse</h4>
+<p>Think of each Grover step as turning up the volume on the correct answer. In a perfect machine, every step makes it louder until you hit the ideal count, and the textbook formula tells you where that is.</p>
+<p>Real quantum hardware is noisy. Every operation adds a little static, and static piles up with every step. Early on, the signal grows faster than the static. Later the static wins, and extra steps make the answer <em>quieter</em>. The textbook formula knows nothing about this, because it assumes a perfect machine.</p>
+<p>So the real question is: given your machine's noise, when should you stop?</p>
+<p><img alt="Left: the textbook 3-step circuit. Right: the 2-step noise-optimal circuit, a third fewer gates" src="images/02-circuits-3-steps-vs-2-steps.png" /></p>
+<h4>What I did</h4>
+<p>I derived the answer as a formal theorem. The noise-optimal number of steps, which I call k*, is always strictly smaller than the textbook number whenever there is any noise at all. As the noise goes to zero, the two agree. I also found a closed-form approximation that matches the exact numerical answer within 2.4%.</p>
+<p>Then I tested it on two IBM Heron r2 processors, ibm_fez and ibm_kingston, with more than 200 circuit runs, each repeated over several seeds and reported with bootstrap confidence intervals.</p>
+<p>For the 4-qubit search on ibm_fez:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Textbook (3 steps)</th>
+<th>Noise-optimal (2 steps)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chance of the right answer</td>
+<td>35.9%</td>
+<td>46.2%</td>
+</tr>
+<tr>
+<td>Gates after IBM's compiler</td>
+<td>1,265</td>
+<td>843</td>
+</tr>
+<tr>
+<td>Accumulated noise</td>
+<td>31.3%</td>
+<td>22.2%</td>
+</tr>
+</tbody>
+</table>
+<p>Two steps meant a third fewer gates and the circuit was both cheaper and better.</p>
+<p>On the sweep, the hardware curve also showed something the textbook never would: at 4 steps the success rate collapses to 17.8%, and by 5 steps it is 6.9%, barely above random guessing at 6.25%. The theory's curve tracked these numbers closely.</p>
+<h4>The part I like most: the algorithm measures its own noise</h4>
+<p>To apply the formula you need to know your device's noise. The usual way is to run many extra calibration circuits. My second contribution avoids that. The success-rate curve of Grover itself has a shape that depends on the noise, so fitting the curve from the runs you were already doing reveals the noise for free. I call this Grover Noise Fingerprinting.</p>
+<p>A useful sanity check: I fingerprinted ibm_fez with a 3-qubit circuit (409 gates) and a 4-qubit circuit (1,265 gates). The two circuits are very different in depth, yet they gave the same per-gate noise, 2.94 and 2.97 parts in ten thousand, within each other's confidence intervals.</p>
+<h4>A report card for quantum machines</h4>
+<p>Third, I defined the Grover Fidelity Score: how much of the ideal Grover advantage a machine keeps when run at its best stopping point. A score of 0.815 means 81.5% of the ideal.</p>
+<p>ibm_kingston scored higher than ibm_fez at both sizes (0.830 vs 0.815 on 3 qubits, 0.626 vs 0.480 on 4 qubits), and the gap widened as the problem grew. That ranking matches IBM's own published error rates, even though my method never looked at them.</p>
+<h4>What I would not claim</h4>
+<ul>
+<li>I tested only 3 and 4 qubits, and the 4-qubit case sits at the edge of the theory's low-noise assumption. I call it practical validation, not proof.</li>
+<li>The noise model is simplified (depolarizing noise, a single marked item).</li>
+<li>My per-gate noise estimate is about 100 times smaller than IBM's headline two-qubit error. That is expected, because I average over hundreds of gates, most of them cheaper single-qubit gates, but it means my number is a fingerprint for ranking and stopping, not a replacement for IBM's calibration.</li>
+</ul>
+<p><img alt="The Grover Fidelity Score for two IBM machines" src="images/03-fidelity-score-two-machines.png" /></p>
+<h4>The takeaway</h4>
+<p>On today's noisy machines, "the optimal algorithm" is not the one in the textbook. It is the textbook algorithm run for fewer steps, with the stopping point set by the hardware you have.</p>
+<p><em>Code and data: github.com/Davuri124/Grover-Algorithm-on-NISQ-devices</em></p>
+</main></body></html>

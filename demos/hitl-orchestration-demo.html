@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Budgeted orchestration: who gets the human reviews?</title>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,700&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f1f8;--panel:#fff;--ink:#231a2b;--mute:#675c71;--line:#ddd2e4;--a:#8a2fa3;--b:#c2571a;--c:#6a7f9a;--ok:#1f7a4d;--bad:#c0392b;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#181120;--panel:#221830;--ink:#f1e9f6;--mute:#b3a5bd;--line:#3a2b4a;--a:#d58cf0;--b:#f0925a;--c:#8fa6c2;--ok:#4fc589;--bad:#ff7b6b}}
+:root[data-theme="dark"]{--bg:#181120;--panel:#221830;--ink:#f1e9f6;--mute:#b3a5bd;--line:#3a2b4a;--a:#d58cf0;--b:#f0925a;--c:#8fa6c2;--ok:#4fc589;--bad:#ff7b6b}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:900px;margin:0 auto;padding:32px 20px 64px}
+h1{font:700 clamp(28px,5vw,42px)/1.15 Newsreader,Georgia,serif;margin:0 0 12px;max-width:22ch}
+h2{font:700 22px/1.25 Newsreader,Georgia,serif;margin:30px 0 8px}
+.lede,.note{color:var(--mute);max-width:70ch}.note{font-size:14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.card{border-left:3px solid var(--a);padding-left:10px}.card b{display:block;font:700 24px/1.2 Newsreader,Georgia,serif}.card span{font-size:13px;color:var(--mute)}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:12px 0}
+label{display:block;font-weight:500;font-size:14px}label output{float:right;color:var(--mute);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--a);margin-top:6px}
+button{font:500 14px "IBM Plex Sans",sans-serif;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer}
+button[aria-pressed=true]{background:var(--a);border-color:var(--a);color:#fff}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) button[aria-pressed=true]{color:#1a1020}}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--b);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+table{border-collapse:collapse;width:100%;font-size:14px}td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}td:first-child,th:first-child{text-align:left}
+.bars div{display:grid;grid-template-columns:minmax(120px,210px) 1fr 70px;gap:8px;align-items:center;font-size:13px;margin:5px 0}
+.bars div span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.bt{position:relative;height:13px;background:color-mix(in srgb,var(--line) 50%,transparent);border-radius:3px}.bt i{position:absolute;top:0;left:0;height:13px;border-radius:3px;transition:width .25s}
+.lg{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--mute);margin:4px 0}.lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}
+.warn{border-left:3px solid var(--b);padding-left:12px;font-size:14px;color:var(--mute);margin:10px 0}
+.status{border:1px dashed var(--b);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--mute);margin-top:10px}.status b{color:var(--ink)}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;margin:8px 0 2px}.flow span{border:1px solid var(--line);border-radius:8px;padding:4px 9px;background:var(--panel)}.flow em{color:var(--mute);font-style:normal}
+.flow .dec{border-color:var(--b);font-weight:500}
+ul.act{margin:8px 0 0;padding-left:18px;font-size:14px;color:var(--mute)}ul.act b{color:var(--ink)}
+.v-win{color:var(--ok);font-weight:500}.v-loss{color:var(--bad);font-weight:500}
+a{color:var(--a)}
+</style>
+</head>
+<body>
+<main>
+<h1>Who gets the human reviews?</h1>
+<p class="lede">Human reviewers are scarce: a realistic limit is "at most K reviews per 1,000 queries". This project builds a multi-agent pipeline that really runs, then asks what a learned orchestrator can add on top of a tuned, non-learned baseline when that hard cap is enforced. No synthetic data: every action the orchestrator could take was executed once on real questions and cached.</p>
+<div class="cards">
+  <div class="card"><b>6,000 queries</b><span>real HotpotQA questions with gold answers</span></div>
+  <div class="card"><b>0 violations</b><span>windows over the review cap, in every stream test</span></div>
+  <div class="card"><b>4 of 15</b><span>cells where risk-stacked RL beat the best tuned heuristic</span></div>
+  <div class="card"><b>0.77 AUROC</b><span>best error predictor: the real bottleneck</span></div>
+</div>
+
+<h2>What the orchestrator decides</h2>
+<div class="panel">
+  <div class="flow"><span>question + 10 paragraphs</span><em>→</em><span>retrieval</span><em>→</em><span class="dec">decision 1</span><em>→</em><span>summarise</span><em>→</em><span>answer (3B or 7B)</span><em>→</em><span>critic + NLI check</span><em>→</em><span class="dec">decision 2</span></div>
+  <div class="row" role="group" aria-label="Decision point"><button id="d1" aria-pressed="true">After retrieval</button><button id="d2" aria-pressed="false">After the answer is checked</button></div>
+  <ul class="act" id="acts" aria-live="polite"></ul>
+  <p class="note" style="margin:10px 0 0" id="seen"></p>
+</div>
+
+<h2>Spend the budget: how much does each method earn?</h2>
+<div class="panel">
+  <p class="note" style="margin:0 0 6px">Net reward = answer F1 minus compute cost (re-retrieval 0.02, bigger model 0.05; a human review counts as F1 = 1). Real results on 2,000 held-out test queries.</p>
+  <div class="controls"><label>Human budget <output id="bO"></output><input id="b" type="range" min="0" max="4" step="1" value="2" aria-describedby="bK"></label></div>
+  <p class="note" id="bK" style="margin:0 0 6px" aria-live="polite"></p>
+  <div class="bars" id="bb"></div>
+  <p class="note" id="bn" style="margin:8px 0 0"></p>
+  <p class="note" style="margin:6px 0 0">Bars start at 0.40. "Oracle" is an unachievable hindsight ceiling, not a baseline.</p>
+</div>
+
+<h2>Where the reward comes from</h2>
+<div class="panel">
+  <div class="bars" id="dec"></div>
+  <p class="note" style="margin:8px 0 0">Cheap automatic upgrades (wide re-retrieval) earn far more than anything a policy adds on top. Early comparisons against human-only baselines were misleading for exactly this reason.</p>
+</div>
+
+<h2>Does the learning help? The honest scorecard</h2>
+<div class="panel">
+  <div class="row" id="tabs" role="group" aria-label="Result sets"></div>
+  <p class="note" id="cap" style="margin:4px 0 8px"></p>
+  <div class="bars" id="bars"></div>
+  <div id="extra"></div>
+</div>
+
+<h2>What is not finished</h2>
+<div class="status"><b>Confirmation on fresh data is pending.</b> The design choices were guided by test-set numbers, so the gains above may be optimistic. A pre-registered test on 2,000 further, disjoint questions is set up (policies, risk models and thresholds frozen; Holm-corrected one-sided tests at budgets 0.02, 0.05 and 0.10; the evaluation refuses to run if any frozen file changed). The fresh cache is built; the evaluation itself has not been completed, so nothing here claims replication.</div>
+
+<h2>Limitations</h2>
+<div class="warn">One dataset (HotpotQA) and one model family (Qwen 3B and 7B). The human reviewer is an oracle that always supplies the gold answer. Compute costs are assumptions, and the ranking of methods changes with them. The stacked gains are small (about 0.5 to 1.7 points of net reward) and individually borderline. Everything is offline replay of real runs, not live serving.</div>
+<p class="note">Written report (PDF): <a id="rep" href="../papers/HITL_Project_Report.pdf" target="_blank" rel="noopener">HITL_Project_Report.pdf</a> · Code: <a href="https://github.com/Davuri124/hitl-orchestrator" target="_blank" rel="noopener">Davuri124/hitl-orchestrator</a></p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+/* ---- decision points ---- */
+const DP={
+ d1:{acts:['<b>Advance</b>: keep the cheap evidence (top-2 paragraphs) and continue.','<b>Re-retrieve</b>: switch to wide retrieval (top-5 with a second-hop query). Costs 0.02.','<b>Human</b>: a reviewer supplies the correct evidence; the pipeline then continues. Uses one review.'],
+     seen:'The policy sees retrieval scores (top-1, margin, entropy over the 10 paragraphs), an embedding of the retrieved evidence, the question embedding, and how much budget is left in the window.'},
+ d2:{acts:['<b>Release</b>: return the answer.','<b>Specialist</b>: re-run the answer with the larger 7B model (once). Costs 0.05.','<b>Human</b>: a reviewer supplies the answer. Uses one review.'],
+     seen:'On top of the above it sees the answerer\u2019s token log-probability and entropy, the critic\u2019s Yes/No probability, NLI entailment, sampled-answer agreement, base-vs-specialist agreement, and a supervised risk score for this answer.'}};
+function dp(k){$('acts').innerHTML=DP[k].acts.map(a=>`<li>${a}</li>`).join('');$('seen').textContent=DP[k].seen;
+ $('d1').setAttribute('aria-pressed',k==='d1');$('d2').setAttribute('aria-pressed',k==='d2')}
+$('d1').onclick=()=>dp('d1');$('d2').onclick=()=>dp('d2');dp('d1');
+/* ---- budget slider: real full-run results (net reward, 2,000 test queries) ---- */
+const BUD=[0.02,0.05,0.10,0.20,0.30];
+const R={'Auto only (no humans)':[.4594,.4594,.4594,.4594,.4594],
+ 'Wide + bigger model, no humans':[.5428,.5428,.5428,.5428,.5428],
+ 'Wide + risk model + humans':[.5552,.5809,.6165,.6787,.7343],
+ 'Wide + bigger model + risk + humans':[.5618,.5880,.6273,.6850,.7269],
+ 'Learned policy (PPO-Lagrangian)':[.5712,.5954,.6336,.6899,.7343],
+ 'Oracle (hindsight ceiling)':[.7296,.7596,.8096,.9086,.9649]};
+const COL=['var(--c)','var(--c)','#2f7fd0','var(--b)','var(--a)','var(--ink)'];
+const WIDE_ONLY=.5394;
+function bud(){const i=+$('b').value,b=BUD[i];$('bO').textContent=b.toFixed(2);
+ $('bK').textContent=`Hard cap: ${Math.round(b*1000)} human reviews per 1,000 queries.`;
+ const lo=.40,hi=1.0;
+ $('bb').innerHTML=Object.keys(R).map((k,j)=>{const v=R[k][i];return `<div><span>${k}</span><span class="bt"><i style="width:${((v-lo)/(hi-lo)*100).toFixed(1)}%;background:${COL[j]}"></i></span><span>${v.toFixed(4)}</span></div>`}).join('');
+ const p=R['Learned policy (PPO-Lagrangian)'][i],a=R['Wide + risk model + humans'][i],c=R['Wide + bigger model + risk + humans'][i];
+ $('bn').innerHTML=`Policy minus the matched heuristics: <b>${(p-a>=0?'+':'')+(p-a).toFixed(4)}</b> vs wide + risk model, <b>${(p-c>=0?'+':'')+(p-c).toFixed(4)}</b> vs the version that also calls the bigger model. Against the stronger one every confidence interval includes zero.`;
+ $('dec').innerHTML=[['Wide re-retrieval alone',.0800],['Bigger (7B) model alone',.0185],['Both upgrades',.0834],[`Human reviews at b = ${b.toFixed(2)} (on top of wide retrieval)`,a-WIDE_ONLY]].map(r=>`<div><span>${r[0]}</span><span class="bt"><i style="width:${(r[1]/.22*100).toFixed(1)}%;background:var(--a)"></i></span><span>+${r[1].toFixed(3)}</span></div>`).join('')}
+$('b').addEventListener('input',bud);bud();
+/* ---- scorecard tabs (real reported results) ---- */
+const SETS={
+ 'Plain RL policy':{cap:'Stream test with a hard cap per 1,000 queries, 3 streams x 5 budgets = 15 cells, against the best tuned heuristic. The plain policy has to learn risk ranking itself.',max:15,rows:[['Wins (95% CI above 0)',0,'var(--ok)'],['Ties',12,'var(--c)'],['Losses (95% CI below 0)',3,'var(--bad)']],
+   extra:'<p class="note" style="margin:8px 0 0">The three losses were at budgets 0.20 and 0.30, where the heuristic\u2019s supervised ranking beats a policy that must learn it.</p>'},
+ 'Risk-stacked RL policy':{cap:'Same test, but the policy also receives an out-of-fold supervised risk score as an input. It improved over the plain policy in all 15 cells (+0.005 to +0.021 net reward).',max:15,rows:[['Wins (95% CI above 0)',4,'var(--ok)'],['Ties',10,'var(--c)'],['Losses (95% CI below 0)',1,'var(--bad)']],
+   extra:`<table style="margin-top:10px"><tr><th>Winning cell</th><th>Gain vs best heuristic</th><th>95% CI</th></tr>
+   <tr><td>iid stream, b = 0.02</td><td class="v-win">+0.0126</td><td>[+0.0007, +0.0247]</td></tr>
+   <tr><td>hard-first stream, b = 0.02</td><td class="v-win">+0.0170</td><td>[+0.0042, +0.0305]</td></tr>
+   <tr><td>hard-first stream, b = 0.10</td><td class="v-win">+0.0156</td><td>[+0.0017, +0.0299]</td></tr>
+   <tr><td>type-blocks stream, b = 0.02</td><td class="v-win">+0.0133</td><td>[+0.0018, +0.0248]</td></tr></table>
+   <p class="note" style="margin:8px 0 0">All 12 cells with b up to 0.20 had a positive point estimate (+0.001 to +0.017). At b = 0.30 all three were negative (-0.004 to -0.014), one significantly. Lower bounds sit close to zero and 15 comparisons were made, so treat this as a small, consistent trend, not a proven effect.</p>`},
+ 'What limits everyone':{cap:'AUROC of each signal for predicting a wrong answer (0.5 = chance). Labels show which run the number comes from.',max:1,rows:[['Supervised model, all signals (full)',.77,'var(--a)'],['Token entropy (full)',.68,'var(--b)'],['Base vs 7B agreement (full)',.65,'var(--b)'],['Critic Yes/No probability (small)',.62,'var(--c)'],['Sampled-answer agreement (full, 0.58 to 0.59)',.59,'var(--c)'],['Critic vs NLI gap (small)',.53,'var(--c)']],dec:2,
+   extra:'<p class="note" style="margin:8px 0 0">The oracle sits 0.16 to 0.23 net reward above the learned policy at every budget. Closing that gap needs better error signals, not a cleverer policy.</p>'}};
+let cur='Plain RL policy';
+function tab(){const s=SETS[cur];$('cap').textContent=s.cap;
+ $('bars').innerHTML=s.rows.map(r=>`<div><span>${r[0]}</span><span class="bt"><i style="width:${(r[1]/s.max*100).toFixed(1)}%;background:${r[2]}"></i></span><span>${s.dec?r[1].toFixed(s.dec):r[1]}</span></div>`).join('');
+ $('extra').innerHTML=s.extra||'';document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-pressed',b.textContent===cur))}
+Object.keys(SETS).forEach(k=>{const b=document.createElement('button');b.textContent=k;b.onclick=()=>{cur=k;tab()};$('tabs').appendChild(b)});tab();
+</script>
+<style>.homepill{position:fixed;left:max(14px,env(safe-area-inset-left,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));z-index:50;font:500 13px "IBM Plex Sans",system-ui,sans-serif;text-decoration:none;color:var(--ink,#111);background:var(--panel,#fff);border:1px solid var(--line,#ccc);padding:7px 14px;border-radius:999px;box-shadow:0 4px 18px rgba(0,0,0,.18)}.homepill:hover{border-color:var(--ink,#111)}</style>
+<a class="homepill" href="../index.html">&larr; All projects</a>
+</body>
+</html>

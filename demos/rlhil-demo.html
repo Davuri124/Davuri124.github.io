@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RLHIL: when should a human step in?</title>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,700&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f1f4ee;--panel:#fff;--ink:#1d2a22;--mute:#5d6b62;--line:#d3dccf;--a:#1f7a4d;--b:#c2571a;--c:#6a7f9a;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#111a15;--panel:#18241d;--ink:#e8f0ea;--mute:#9db0a3;--line:#2b3b31;--a:#4fc589;--b:#f0925a;--c:#8fa6c2}}
+:root[data-theme="dark"]{--bg:#111a15;--panel:#18241d;--ink:#e8f0ea;--mute:#9db0a3;--line:#2b3b31;--a:#4fc589;--b:#f0925a;--c:#8fa6c2}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:900px;margin:0 auto;padding:32px 20px 48px}
+h1{font:700 clamp(28px,5vw,42px)/1.15 Newsreader,Georgia,serif;margin:0 0 12px;max-width:20ch}
+h2{font:700 22px/1.25 Newsreader,Georgia,serif;margin:30px 0 8px}
+.lede,.note{color:var(--mute);max-width:68ch}.note{font-size:14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.card{border-left:3px solid var(--a);padding-left:10px}.card b{display:block;font:700 24px/1.2 Newsreader,Georgia,serif}.card span{font-size:13px;color:var(--mute)}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin:12px 0}
+label{display:block;font-weight:500;font-size:14px}label output{float:right;color:var(--mute);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--a);margin-top:6px}
+button{font:500 14px "IBM Plex Sans",sans-serif;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer}
+button[aria-pressed=true]{background:var(--a);border-color:var(--a);color:#fff}
+button:focus-visible,input:focus-visible{outline:2px solid var(--b);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+svg{width:100%;height:auto;display:block;min-width:520px}.sw{overflow-x:auto}text{fill:var(--mute);font:11px "IBM Plex Sans",sans-serif}
+table{border-collapse:collapse;width:100%;font-size:14px}td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}td:first-child,th:first-child{text-align:left}
+.bars div{display:grid;grid-template-columns:150px 1fr 64px;gap:8px;align-items:center;font-size:13px;margin:4px 0}
+.bt{position:relative;height:12px;background:color-mix(in srgb,var(--line) 50%,transparent);border-radius:3px}.bt i{position:absolute;top:0;height:12px;border-radius:3px}
+.lg{display:flex;gap:16px;font-size:13px;color:var(--mute);margin:4px 0}.lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}
+.warn{border-left:3px solid var(--b);padding-left:12px;font-size:14px;color:var(--mute);margin:10px 0}
+a{color:var(--a)}
+</style>
+</head>
+<body>
+<main>
+<h1>Learning when a human should step in.</h1>
+<p class="lede">An automated pipeline that never asks for help misses costly errors. One that always asks wastes the human. RLHIL trains a PPO agent to decide, step by step, whether to continue or intervene, using the classifier's own uncertainty.</p>
+<div class="cards">
+  <div class="card"><b>d up to 19.05</b><span>effect size vs baselines, p &lt; 0.001</span></div>
+  <div class="card"><b>4 datasets</b><span>real-world, zero retraining</span></div>
+  <div class="card"><b>5 updates</b><span>MAML adapts to an unseen pipeline</span></div>
+  <div class="card"><b>≥ 92%</b><span>of clean reward under attack</span></div>
+</div>
+
+<h2>Why a fixed threshold is not enough</h2>
+<div class="panel">
+  <p class="note" style="margin:0 0 6px">A small toy pipeline (20 steps, 5 interventions allowed). Each step has a hidden risk; you only see a noisy uncertainty and a noisy risk estimate. Intervening on a real error scores +1, on a false alarm −1, and a missed error −2. Raise the difficulty and watch the best threshold move.</p>
+  <div class="controls">
+    <label>Intervene when score above <output id="thO"></output><input id="th" type="range" min="0.05" max="0.95" step="0.01" value="0.5"></label>
+    <label>Pipeline difficulty <output id="dfO"></output><input id="df" type="range" min="0" max="1" step="0.05" value="0.6"></label>
+  </div>
+  <div class="sw"><svg id="sweep" viewBox="0 0 760 300" role="img" aria-label="Mean reward versus intervention threshold, with never, always and random baselines"></svg></div>
+  <div class="lg"><span><i style="background:var(--a)"></i>threshold policy</span><span><i style="background:var(--b)"></i>best threshold</span><span><i style="background:var(--c)"></i>never / always / random</span></div>
+  <table aria-live="polite"><tr><th>Policy</th><th>Mean reward</th><th>Interventions</th><th>Missed errors</th><th>Precision</th></tr><tbody id="tb"></tbody></table>
+  <p class="note" style="margin-bottom:0">Toy environment written for this page to illustrate the idea. It is not the paper's environment and the PPO agent is not run here. Paper results are below.</p>
+</div>
+
+<h2>Results from the paper</h2>
+<div class="panel">
+  <div class="row" id="tabs" role="group" aria-label="Result tables"></div>
+  <p class="note" id="cap" style="margin:4px 0 8px"></p>
+  <div class="lg" id="lg"></div><div class="bars" id="bars"></div>
+</div>
+
+<h2>How many episodes do you need?</h2>
+<div class="panel">
+  <div class="controls">
+    <label>Effect size d <output id="dO"></output><input id="d" type="range" min="0.1" max="1.2" step="0.05" value="0.2"></label>
+    <label>Episodes per group <output id="nO"></output><input id="n" type="range" min="10" max="500" step="10" value="200"></label>
+  </div>
+  <div class="row"><button id="s1" aria-pressed="true">One-sided</button><button id="s2" aria-pressed="false">Two-sided</button></div>
+  <div class="cards"><div class="card"><b id="pw"></b><span>power at α = 0.05</span></div><div class="card"><b id="n80"></b><span>episodes per group for 80% power</span></div></div>
+  <p class="note" style="margin:0">With one-sided α = 0.05 and d = 0.2 this gives 63.9% at n = 200 and n = 310 for 80%, the paper's Table XIV. A two-sided test needs more episodes.</p>
+</div>
+
+<h2>Limitations the paper states</h2>
+<div class="warn">The agent is trained in simulation and deployed zero-shot on real data; simulated operators stand in for real human attention; adversaries are not policy-aware; and the original MAML result (p = 0.055) needed a post-hoc reanalysis (n = 20, p &lt; 0.001).</div>
+<p class="note">Code and write-up: <a href="https://github.com/Davuri124/Human_Intervention_Points">Davuri124/Human_Intervention_Points</a></p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+/*SIM*/
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gauss(r){return Math.sqrt(-2*Math.log(1-r()))*Math.cos(2*Math.PI*r())}
+const T=20,B=5,N=300,cl=x=>Math.max(0,Math.min(1,x));
+function episodes(df){const out=[];for(let k=0;k<N;k++){const r=rng(1000+k),st=[];
+  for(let t=0;t<T;t++){const risk=cl(Math.pow(r(),2-1.2*df)*(0.5+0.5*df)+0.15*df),err=r()<risk*risk*(0.6+0.8*df),
+    u=cl(risk+gauss(r)*(0.12+0.3*df)),e=cl(risk+gauss(r)*0.12);st.push({err,s:(u+e)/2,rnd:r()})}out.push(st)}return out}
+function run(eps,act){let R=0,I=0,M=0,C=0;for(const ep of eps){let b=B;for(const o of ep){if(b>0&&act(o)){b--;I++;if(o.err){R+=1;C++}else R-=1}else if(o.err){R-=2;M++}}}
+  return{r:R/eps.length,i:I/eps.length,m:M/eps.length,p:I?C/I:0}}
+/*ENDSIM*/
+function draw(){const df=+$('df').value,th=+$('th').value,eps=episodes(df);
+  $('thO').textContent=th.toFixed(2);$('dfO').textContent=df.toFixed(2);
+  const ths=[];for(let x=0.05;x<=0.951;x+=0.025)ths.push(+x.toFixed(3));
+  const sw=ths.map(x=>run(eps,o=>o.s>x).r),bi=sw.indexOf(Math.max(...sw)),best=ths[bi];
+  const never=run(eps,()=>false),always=run(eps,()=>true),rand=run(eps,o=>o.rnd<B/T),mine=run(eps,o=>o.s>th);
+  const all=sw.concat([never.r,always.r,rand.r]),lo=Math.min(...all),hi=Math.max(...all),W=760,H=300,L=44,Rr=12,Tp=12,Bt=34,pw=W-L-Rr,ph=H-Tp-Bt;
+  const X=v=>L+(v-0.05)/0.9*pw,Y=v=>Tp+(1-(v-lo)/(hi-lo||1))*ph;let s='';
+  for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4;s+=`<line x1="${L}" x2="${W-Rr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end">${v.toFixed(1)}</text>`}
+  for(let v=0.1;v<=0.91;v+=0.2)s+=`<text x="${X(v)}" y="${H-16}" text-anchor="middle">${v.toFixed(1)}</text>`;
+  s+=`<text x="${L+pw/2}" y="${H-2}" text-anchor="middle">threshold on combined uncertainty and risk score</text>`;
+  [[never.r,'never'],[always.r,'always'],[rand.r,'random']].forEach(([v,n])=>s+=`<line x1="${L}" x2="${W-Rr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--c)" stroke-dasharray="4 4"/><text x="${W-Rr-2}" y="${Y(v)-4}" text-anchor="end">${n}</text>`);
+  s+=`<path d="${ths.map((x,i)=>(i?'L':'M')+X(x).toFixed(1)+' '+Y(sw[i]).toFixed(1)).join('')}" fill="none" stroke="var(--a)" stroke-width="3"/>`;
+  s+=`<line x1="${X(best)}" x2="${X(best)}" y1="${Tp}" y2="${Tp+ph}" stroke="var(--b)" stroke-width="2"/><text x="${X(best)+5}" y="${Tp+12}" style="fill:var(--b)">best ${best.toFixed(2)}</text>`;
+  s+=`<circle cx="${X(th)}" cy="${Y(mine.r)}" r="5" fill="var(--a)"/>`;$('sweep').innerHTML=s;
+  const row=(n,x,sh)=>`<tr><td>${n}</td><td>${x.r.toFixed(2)}</td><td>${x.i.toFixed(2)}</td><td>${x.m.toFixed(2)}</td><td>${sh?(x.p*100).toFixed(0)+'%':'–'}</td></tr>`;
+  $('tb').innerHTML=row('Your threshold ('+th.toFixed(2)+')',mine,1)+row('Best threshold ('+best.toFixed(2)+')',run(eps,o=>o.s>best),1)+row('Never intervene',never)+row('Always intervene',always)+row('Random',rand)}
+['th','df'].forEach(i=>$(i).addEventListener('input',draw));
+const SETS={
+ 'Synthetic pipeline':{cap:'Table II. Reward on the original synthetic pipeline.',lg:['Reward'],rows:[['Trained PPO',11.67],['Never intervene',7.51],['Random',1.24],['Always intervene',-12.44]]},
+ 'Real fraud data':{cap:'Table VIII. Credit-card-fraud pipeline. Never-intervene is almost as good as PPO here.',lg:['Reward'],rows:[['PPO agent',15.05],['Never intervene',14.90],['Random',-4.38],['Always intervene',-25.92]]},
+ 'Four real datasets':{cap:'Table IX. Zero-shot PPO against a random policy.',lg:['PPO','Random'],rows:[['Credit Card Fraud',15.05,-4.38],['Heart Disease',-0.47,-9.24],['Diabetes',6.47,-8.98],['Bank Marketing',16.98,-5.24]]},
+ 'MAML adaptation':{cap:'Table VII. n = 20 trials; each metric is on its own scale.',lg:['MAML','Standard PPO'],rows:[['Episode-1 reward',15.00,0.14],['Final reward',14.43,11.74],['AUC (sum reward)',146.78,80.28]],own:1},
+ 'Human operator':{cap:'Table X. Reward by simulated operator attentiveness.',lg:['Reward'],rows:[['Ideal',18.45],['Expert',16.09],['Standard',13.97],['Fatigued',12.20]]},
+ 'vs prior methods':{cap:'Table XV. Re-implemented learning-to-defer baselines.',lg:['Reward'],rows:[['RLHIL (PPO)',18.33],['L2D',16.90],['CTD',10.49]]}};
+const col=['var(--a)','var(--c)'];let cur='Synthetic pipeline';
+function table(){const s=SETS[cur];$('cap').textContent=s.cap;$('lg').innerHTML=s.lg.length>1?s.lg.map((l,i)=>`<span><i style="background:${col[i]}"></i>${l}</span>`).join(''):'';
+  const all=s.rows.flatMap(r=>r.slice(1)),mn=Math.min(0,...all),mx=Math.max(...all),zero=-mn/(mx-mn||1);
+  $('bars').innerHTML=s.rows.map(r=>{const vs=r.slice(1),sc=s.own?Math.max(...vs):0;return vs.map((v,i)=>{
+    let a=0,b=v;if(s.own){a=0;b=v/sc}else{b=(v-mn)/(mx-mn||1)}
+    const l=s.own?0:Math.min(zero,b),w=s.own?b:Math.abs(b-zero);
+    return `<div><span>${i?'':r[0]}</span><span class="bt"><i style="left:${(l*100).toFixed(1)}%;width:${(w*100).toFixed(1)}%;background:${col[i]}"></i></span><span>${v.toFixed(2)}</span></div>`}).join('')}).join('');
+  document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-pressed',b.textContent===cur))}
+Object.keys(SETS).forEach(k=>{const b=document.createElement('button');b.textContent=k;b.onclick=()=>{cur=k;table()};$('tabs').appendChild(b)});
+/*POW*/
+function erf(x){const s=x<0?-1:1;x=Math.abs(x);const t=1/(1+0.3275911*x);return s*(1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x))}
+const Phi=x=>0.5*(1+erf(x/Math.SQRT2));let one=true;
+const za=()=>one?1.6448536:1.959964,zb=0.8416212;
+function power(d,n){return 1-Phi(za()-d*Math.sqrt(n/2))}
+function n80(d){return Math.ceil(2*Math.pow((za()+zb)/d,2))}
+/*ENDPOW*/
+function pw(){const d=+$('d').value,n=+$('n').value;$('dO').textContent=d.toFixed(2);$('nO').textContent=n;$('pw').textContent=(power(d,n)*100).toFixed(1)+'%';$('n80').textContent=n80(d)}
+['d','n'].forEach(i=>$(i).addEventListener('input',pw));
+$('s1').onclick=()=>{one=true;$('s1').setAttribute('aria-pressed',true);$('s2').setAttribute('aria-pressed',false);pw()};
+$('s2').onclick=()=>{one=false;$('s2').setAttribute('aria-pressed',true);$('s1').setAttribute('aria-pressed',false);pw()};
+draw();table();pw();
+</script>
+<style>.homepill{position:fixed;left:max(14px,env(safe-area-inset-left,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));z-index:50;font:500 13px "IBM Plex Sans",system-ui,sans-serif;text-decoration:none;color:var(--ink,#111);background:var(--panel,#fff);border:1px solid var(--line,#ccc);padding:7px 14px;border-radius:999px;box-shadow:0 4px 18px rgba(0,0,0,.18)}.homepill:hover{border-color:var(--ink,#111)}</style>
+<a class="homepill" href="../index.html">&larr; All projects</a>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>I Rebuilt My Best AI Result With Real Data. The Win Almost Disappeared. · Agnes Teresa Davuri</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f7;--panel:#fff;--ink:#172036;--mute:#586178;--line:#d3d9e6;--r:#3447c9;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1424;--panel:#171d33;--ink:#eaeefb;--mute:#a1a9c4;--line:#2a3252;--r:#8fa0ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:400 18px/1.75 "Public Sans",system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:28px 20px 72px}a{color:var(--r)}
+.back{font-size:14px;text-decoration:none}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;line-height:1.15}h1{font-size:clamp(30px,6vw,46px);margin:20px 0 10px}h2{font-size:28px;margin:44px 0 8px}h3{font-size:22px}
+.sub{color:var(--mute);font-style:italic;margin:0 0 24px}
+img{max-width:100%;height:auto;border-radius:4px;display:block;margin:24px auto 6px;background:#fff}
+em{color:var(--mute)}blockquote{margin:20px 0;padding-left:16px;border-left:3px solid var(--r);color:var(--mute)}
+table{border-collapse:collapse;display:block;overflow-x:auto;font-size:15px}td,th{border:1px solid var(--line);padding:6px 10px;text-align:left}
+code{background:var(--panel);padding:1px 5px;border-radius:3px;font-size:.9em}
+</style></head><body><main>
+<a class="back" href="../../index.html#articles">← All articles</a>
+<h1>I Rebuilt My Best AI Result With Real Data. The Win Almost Disappeared.</h1><p class="sub">What a human-review budget, 2,000 real questions and a pre-registration taught me about credit I did not deserve.</p>
+<p><img alt="Where the gain actually came from: cheap automatic upgrades did more than the learned policy" src="images/01-hero-where-the-gain-came-from.png" /></p>
+<p>In my last article, I trained an agent to decide when a human should review an AI's answer, and it beat every baseline by a spectacular margin. The weakness was obvious in hindsight. Much of the environment was simulated, and the baselines were easy.</p>
+<p>So I started over with one rule: <strong>no more synthetic anything.</strong></p>
+<h2>Round two</h2>
+<ul>
+<li><strong>Real questions</strong> from HotpotQA, answered by real language models (Qwen 3B and 7B).</li>
+<li><strong>Every possible action run once and saved.</strong> Training and testing used real outputs, not guesses. I call it cached-counterfactual replay.</li>
+<li><strong>A hard budget:</strong> at most K human reviews per 1,000 questions, enforced by blocking the "ask a human" action once the budget is spent. Across every test, zero windows went over budget.</li>
+<li><strong>Strong baselines</strong> with the <em>same</em> options as my agent.</li>
+</ul>
+<p><img alt="The pipeline: retrieve, summarise, answer, critique, then an orchestrator that decides whether to advance, re-retrieve, call the bigger model or send to a human" src="images/02-architecture.png" /></p>
+<h2>What the real version said</h2>
+<p><strong>Most of the gain was free.</strong> Re-retrieving evidence with a wider search added 0.080 net reward, more than anything the learned policy contributed. Calling the bigger 7B model added 0.019. Human reviews helped too, from +0.016 at a 2% budget to +0.195 at 30%. None of that needs reinforcement learning.</p>
+<p><img alt="Net reward against the human-review budget. The black line is a hindsight oracle" src="images/03-reward-vs-budget.png" /></p>
+<p><strong>A plain RL agent did not beat a smart rule.</strong> Against a supervised risk model plus a pacing rule: 0 wins, 12 ties and 3 losses across 15 test settings.</p>
+<p><strong>Giving the agent a risk score helped, a little.</strong> When I fed it a supervised estimate of "how likely is this answer wrong", it improved over the plain agent in all 15 settings, by 0.005 to 0.021 net reward, and went 4 wins, 10 ties and 1 loss against the best rule.</p>
+<p><img alt="Win, tie and loss counts against the best heuristic" src="images/04-verdict-wins-ties-losses.png" /></p>
+<p><strong>The real bottleneck was information, not the algorithm.</strong> The best single warning signal predicted wrong answers with an AUROC around 0.68, and everything combined reached about 0.77. A hindsight oracle sat 0.16 to 0.23 above my agent at every budget. No policy can fix what its signals cannot see.</p>
+<h2>The part I would put on a poster</h2>
+<p>The gains from the risk-stacked agent are small, and I chose some design details after seeing test numbers, which makes them look better than they are. So before claiming anything, I wrote a <strong>pre-registration</strong>: three hypotheses, a correction for testing multiple times, frozen code and model hashes, and 2,000 fresh questions the system had never touched. The evaluation refuses to run if any frozen file has changed.</p>
+<p>If two or three of the hypotheses hold, the small improvement is real. If zero or one, the earlier gains were mostly noise, and I will say so. Both outcomes are publishable.</p>
+<p><strong>Where this stands:</strong> the confirmatory test has not been run yet. The 2,000-question fresh set is built and behaves like the main one, but the evaluation stopped because my registration file went missing when my session changed. I am regenerating it and checking its hashes against the originals before I run anything. Until then, the honest claim is a consistent small improvement that is not yet independently confirmed.</p>
+<h2>What I would tell you</h2>
+<ol>
+<li>Weak baselines produce impressive charts. Ask what a smart non-learning rule would do.</li>
+<li>The best action is often cheap and automatic. Measure that before crediting the learning.</li>
+<li>If you tuned anything after looking at test results, say so and plan a fresh test.</li>
+</ol>
+<p>Code: <a href="https://github.com/Davuri124/hitl-orchestrator">github.com/Davuri124/hitl-orchestrator</a></p>
+</main></body></html>

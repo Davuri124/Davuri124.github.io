@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CALF: a causal model with a tree of covariates</title>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,700&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f1e7;--panel:#fffdf8;--ink:#2b2118;--mute:#6d5f52;--line:#e0d5c3;--R:#8a5a2b;--S:#a3842f;--L:#3f8f5a;--C:#3b6fa5;--bad:#b4472f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#1a1510;--panel:#231d16;--ink:#f1e9dc;--mute:#b3a695;--line:#3a3025;--R:#d09a63;--S:#d6b85a;--L:#6cc58a;--C:#7fb0e6;--bad:#f08a70}}
+:root[data-theme="dark"]{--bg:#1a1510;--panel:#231d16;--ink:#f1e9dc;--mute:#b3a695;--line:#3a3025;--R:#d09a63;--S:#d6b85a;--L:#6cc58a;--C:#7fb0e6;--bad:#f08a70}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:900px;margin:0 auto;padding:32px 20px 48px}
+h1{font:700 clamp(28px,5vw,42px)/1.15 Newsreader,Georgia,serif;margin:0 0 12px;max-width:20ch}
+h2{font:700 22px/1.25 Newsreader,Georgia,serif;margin:30px 0 8px}
+.lede,.note{color:var(--mute);max-width:68ch}.note{font-size:14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:12px 0}
+.card{border-left:3px solid var(--C);padding-left:10px}.card b{display:block;font:700 24px/1.2 Newsreader,Georgia,serif;font-variant-numeric:tabular-nums}.card span{font-size:13px;color:var(--mute)}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+button{font:500 14px "IBM Plex Sans",sans-serif;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer}
+button[aria-pressed=true]{background:var(--C);border-color:var(--C);color:#fff}
+button:focus-visible,input:focus-visible{outline:2px solid var(--bad);outline-offset:2px}
+label{display:block;font-weight:500;font-size:14px}label output{float:right;color:var(--mute)}
+input[type=range]{width:100%;accent-color:var(--C);margin-top:6px}
+svg{width:100%;height:auto;display:block;min-width:520px}.sw{overflow-x:auto}text{fill:var(--mute);font:11px "IBM Plex Sans",sans-serif}
+.vars{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:8px;font-size:13px}
+.vars div{border-top:3px solid;padding-top:4px;color:var(--mute)}.vars b{color:var(--ink);display:block}
+.bars div{display:grid;grid-template-columns:150px 1fr 76px;gap:8px;align-items:center;font-size:13px;margin:4px 0}
+.bt{position:relative;height:12px;background:color-mix(in srgb,var(--line) 60%,transparent);border-radius:3px}.bt i{position:absolute;top:0;left:0;height:12px;border-radius:3px}
+.bars span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.warn{border-left:3px solid var(--bad);padding-left:12px;font-size:14px;color:var(--mute);margin:10px 0}
+a{color:var(--C)}
+</style>
+</head>
+<body>
+<main>
+<h1>Give the model the causal order of the data.</h1>
+<p class="lede">Most treatment-effect models see covariates as one flat vector. CALF splits them into four layers (background, environment, social context, choice) and lets each layer attend to the one before it. Here the question is: what is the effect of college on income, for this person?</p>
+<div class="cards">
+  <div class="card"><b>20,119</b><span>PEHE, lowest of 6 models</span></div>
+  <div class="card"><b>p &lt; 0.001</b><span>vs Causal Forest, paired bootstrap</span></div>
+  <div class="card"><b>n = 8,984</b><span>NLSY97-based, known true effects</span></div>
+  <div class="card"><b>≈ 0%</b><span>gain on insurance, reported plainly</span></div>
+</div>
+
+<h2>Take the tree apart</h2>
+<div class="panel">
+  <div class="row" id="abl" role="group" aria-label="Ablation"></div>
+  <div class="sw"><svg id="arch" viewBox="0 0 760 250" role="img" aria-label="CALF architecture with the selected component removed"></svg></div>
+  <div class="cards"><div class="card"><b id="pe"></b><span>PEHE (lower is better)</span></div><div class="card" style="border-color:var(--bad)"><b id="dl"></b><span>change vs full CALF</span></div></div>
+  <div class="vars" id="vars"></div>
+  <p class="note" style="margin-bottom:0">Table V. Removing Roots hurts most. Removing Leaves slightly helps, which the paper says means peer features add more noise than signal here.</p>
+</div>
+
+<h2>Against five baselines</h2>
+<div class="panel"><div class="row"><button id="dn" aria-pressed="false">Include DragonNet (181,149)</button></div><div class="bars" id="main"></div>
+<p class="note" style="margin-bottom:0">Table III. DragonNet collapsed to near-constant predictions. CALF has the better PEHE but a worse average effect error than Causal Forest (4.36% vs 2.23%).</p></div>
+
+<h2>How much data do you have?</h2>
+<div class="panel">
+  <label>Share of training data <output id="fO"></output><input id="f" type="range" min="0.1" max="1" step="0.05" value="0.3"></label>
+  <div class="sw"><svg id="se" viewBox="0 0 760 240" role="img" aria-label="PEHE versus training fraction for CALF and Causal Forest"></svg></div>
+  <div class="cards"><div class="card" style="border-color:var(--C)"><b id="sc"></b><span>CALF PEHE (interpolated)</span></div><div class="card" style="border-color:var(--R)"><b id="sf"></b><span>Causal Forest PEHE</span></div><div class="card"><b id="sw"></b><span>better here</span></div></div>
+  <p class="note" style="margin-bottom:0">Table IX has six points; the line between them is interpolated. CALF needs more data: at 10% it is more than twice as bad.</p>
+</div>
+
+<h2>Who gets treated first?</h2>
+<div class="panel"><div class="row" id="bud"></div><div class="bars" id="pol"></div>
+<p class="note" style="margin-bottom:0">Table X. Cumulative policy value when only the top-ranked share of people can be treated.</p></div>
+
+<h2>Effects by subgroup</h2>
+<div class="panel"><div class="row" id="grp"></div><div class="bars" id="sub"></div>
+<p class="note" style="margin-bottom:0">Table VIII, estimated ATE in dollars. The parental-education gradient is the largest; the paper asks for domain-expert interpretation rather than calling it bias.</p></div>
+
+<h2>The insurance result</h2>
+<div class="panel"><div class="row"><button id="z1" aria-pressed="true">Zoomed in</button><button id="z2" aria-pressed="false">Full scale</button></div><div class="bars" id="ins"></div>
+<p class="note" style="margin-bottom:0">Table XII. All five methods land within 0.004% of each other. The paper attributes this to claim severity being only weakly tied to the layered covariates.</p></div>
+
+<h2>Limitations the paper states</h2>
+<div class="warn">Both evaluations are semi-synthetic. Ignorability cannot be tested. MC-Dropout 90% intervals cover only 66.9%. CALF loses to Causal Forest on IHDP and Jobs and in small samples.</div>
+<p class="note">Code and write-up: <a href="https://github.com/Davuri124/CALF">Davuri124/CALF</a></p>
+</main>
+<script>
+const $=id=>document.getElementById(id),Q=[['Roots','R','family income, parental education, family size, single-parent status, race, gender'],['Soil','S','school quality, student-teacher ratio, public/private, region, urban/rural'],['Leaves','L','peer college rate, peer employment rate, social support'],['Choice','C','extracurriculars, college attendance (treatment), training program, job search effort']];
+const ABL=[['Full CALF',20119,0,-1,0],['− Roots',27860,38.5,0],['− Soil',24376,21.2,1],['− Leaves',19885,-1.2,2],['− Cross-attention',20990,4.3,-1,1],['Plain MLP',23850,18.5,-1,2]];
+let ai=0;
+function arch(){const a=ABL[ai],rm=a[3],mode=a[4]||0,noAtt=a[0]==='− Cross-attention',plain=a[0]==='Plain MLP';let s='';
+  Q.forEach((q,i)=>{const x=20+i*185,off=i===rm||plain;
+    s+=`<rect x="${x}" y="14" width="140" height="48" rx="8" fill="var(--${q[1]})" opacity="${off?0.18:1}"/><text x="${x+70}" y="43" text-anchor="middle" style="fill:#fff;font-weight:500;font-size:14px;opacity:${off?0.4:1}">${q[0]}</text>`;
+    if(off&&!plain)s+=`<line x1="${x}" y1="14" x2="${x+140}" y2="62" stroke="var(--bad)" stroke-width="2"/>`;
+    if(i<3){const dim=i===rm||i+1===rm||noAtt||plain;s+=`<line x1="${x+140}" y1="38" x2="${x+185}" y2="38" stroke="var(--ink)" stroke-width="2" ${dim?'stroke-dasharray="3 4" opacity=".3"':''}/><text x="${x+162}" y="30" text-anchor="middle">attn</text>`}});
+  s+=`<rect x="20" y="96" width="720" height="40" rx="8" fill="none" stroke="var(--line)" stroke-width="2"/><text x="380" y="121" text-anchor="middle" style="font-size:13px">${plain?'plain MLP over one concatenated vector (no tree, no attention)':'concatenate the four layers, then fuse'}</text>`;
+  [['propensity ê',150],['outcome ŷ0',380],['outcome ŷ1',610]].forEach(([n,x])=>s+=`<rect x="${x-70}" y="170" width="140" height="34" rx="8" fill="none" stroke="var(--ink)"/><text x="${x}" y="192" text-anchor="middle" style="fill:var(--ink)">${n}</text>`);
+  s+=`<text x="380" y="236" text-anchor="middle" style="font-size:13px;fill:var(--ink)">effect for one person: τ̂ = ŷ1 − ŷ0</text>`;$('arch').innerHTML=s;
+  $('pe').textContent=a[1].toLocaleString();$('dl').textContent=a[2]===0?'–':(a[2]>0?'+':'−')+Math.abs(a[2]).toFixed(1)+'%';
+  $('vars').innerHTML=Q.map((q,i)=>`<div style="border-color:var(--${q[1]});${i===rm||plain?'opacity:.4':''}"><b>${q[0]}</b>${q[2]}</div>`).join('');
+  document.querySelectorAll('#abl button').forEach((b,i)=>b.setAttribute('aria-pressed',i===ai))}
+ABL.forEach((a,i)=>{const b=document.createElement('button');b.textContent=a[0];b.onclick=()=>{ai=i;arch()};$('abl').appendChild(b)});
+function bars(id,rows,o){o=o||{};const mx=o.max||Math.max(...rows.map(r=>r[1])),mn=o.min||0;
+  $(id).innerHTML=rows.map(r=>`<div><span>${r[0]}</span><span class="bt"><i style="width:${Math.max(0.5,(r[1]-mn)/(mx-mn)*100).toFixed(1)}%;background:var(--${r[2]||'C'})"></i></span><span>${o.f?o.f(r[1]):r[1].toLocaleString()}</span></div>`).join('')}
+let dn=false;const MAIN=[['CALF (ours)',20119,'C'],['Causal Forest',22805,'R'],['BART',25705,'R'],['X-Learner',26747,'R'],['T-Learner',30975,'R']];
+function main(){bars('main',dn?MAIN.concat([['DragonNet',181149,'R']]):MAIN,{max:dn?181149:32000});$('dn').setAttribute('aria-pressed',dn)}
+$('dn').onclick=()=>{dn=!dn;main()};
+const FR=[0.1,0.2,0.3,0.5,0.7,1.0],CA=[60233,50674,37051,23249,20949,20658],CF=[27979,25042,23658,22563,23453,22533];
+function lerp(v,x){let i=0;while(i<4&&x>FR[i+1])i++;const t=(x-FR[i])/(FR[i+1]-FR[i]);return v[i]+(v[i+1]-v[i])*t}
+function se(){const x=+$('f').value,c=lerp(CA,x),f=lerp(CF,x);$('fO').textContent=Math.round(x*100)+'%';$('sc').textContent=Math.round(c).toLocaleString();$('sf').textContent=Math.round(f).toLocaleString();$('sw').textContent=c<f?'CALF':'Causal Forest';
+  const W=760,H=240,L=50,Rr=12,T=12,B=30,pw=W-L-Rr,ph=H-T-B,X=v=>L+(v-0.1)/0.9*pw,Y=v=>T+(1-(v-15000)/50000)*ph;let s='';
+  for(let v=20000;v<=60000;v+=20000)s+=`<line x1="${L}" x2="${W-Rr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end">${v/1000}k</text>`;
+  [0.1,0.3,0.5,0.7,0.9].forEach(v=>s+=`<text x="${X(v)}" y="${H-10}" text-anchor="middle">${Math.round(v*100)}%</text>`);
+  [[CA,'C'],[CF,'R']].forEach(([d,c])=>s+=`<path d="${FR.map((p,i)=>(i?'L':'M')+X(p).toFixed(1)+' '+Y(d[i]).toFixed(1)).join('')}" fill="none" stroke="var(--${c})" stroke-width="3"/>`+FR.map((p,i)=>`<circle cx="${X(p)}" cy="${Y(d[i])}" r="3.5" fill="var(--${c})"/>`).join(''));
+  s+=`<line x1="${X(x)}" x2="${X(x)}" y1="${T}" y2="${T+ph}" stroke="var(--ink)" stroke-dasharray="3 3"/><text x="${X(0.12)}" y="${Y(58000)}" style="fill:var(--C)">CALF</text><text x="${X(0.12)}" y="${Y(31000)}" style="fill:var(--R)">Causal Forest</text>`;$('se').innerHTML=s}
+$('f').addEventListener('input',se);
+const POL={'10%':[21.6,20.0,18.4,8.8],'30%':[46.0,42.9,42.7,26.2],'50%':[63.1,60.4,59.7,43.7],'100%':[87.6,87.6,87.6,87.6]};let pb='10%';
+function pol(){bars('pol',POL[pb].map((v,i)=>[['Oracle (true effect)','CALF','Causal Forest','Random'][i]+'',v,['L','C','R','S'][i]]),{max:90,f:v=>'$'+v.toFixed(1)+'M'});document.querySelectorAll('#bud button').forEach(b=>b.setAttribute('aria-pressed',b.textContent===pb))}
+Object.keys(POL).forEach(k=>{const b=document.createElement('button');b.textContent=k;b.onclick=()=>{pb=k;pol()};$('bud').appendChild(b)});
+const SUB={'Race':[['White (919)',53573],['Black (478)',48498],['Hispanic (307)',47363],['Other (93)',47703]],'Gender':[['Male (927)',52907],['Female (870)',48675]],'Parental education':[['< High school (306)',36294],['High school (518)',42670],['Some college (416)',52516],['Bachelor (350)',61567],['Graduate (207)',71442]]};let sg='Parental education';
+function sub(){bars('sub',SUB[sg].map(r=>[r[0],r[1],'L']),{max:75000,f:v=>'$'+v.toLocaleString()});document.querySelectorAll('#grp button').forEach(b=>b.setAttribute('aria-pressed',b.textContent===sg))}
+Object.keys(SUB).forEach(k=>{const b=document.createElement('button');b.textContent=k;b.onclick=()=>{sg=k;sub()};$('grp').appendChild(b)});
+const INS=[['CALF',1991.099,'C'],['S-Learner (GBM)',1991.116,'R'],['Actuarial GLM',1991.126,'R'],['T-Learner (GBM)',1991.160,'R'],['RF T-Learner',1991.165,'R']];let zoom=true;
+function ins(){bars('ins',INS,{min:zoom?1991.05:0,max:zoom?1991.17:2000,f:v=>v.toFixed(3)});$('z1').setAttribute('aria-pressed',zoom);$('z2').setAttribute('aria-pressed',!zoom)}
+$('z1').onclick=()=>{zoom=true;ins()};$('z2').onclick=()=>{zoom=false;ins()};
+arch();main();se();pol();sub();ins();
+</script>
+<style>.homepill{position:fixed;left:max(14px,env(safe-area-inset-left,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));z-index:50;font:500 13px "IBM Plex Sans",system-ui,sans-serif;text-decoration:none;color:var(--ink,#111);background:var(--panel,#fff);border:1px solid var(--line,#ccc);padding:7px 14px;border-radius:999px;box-shadow:0 4px 18px rgba(0,0,0,.18)}.homepill:hover{border-color:var(--ink,#111)}</style>
+<a class="homepill" href="../index.html">&larr; All projects</a>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Can a Quantum Computer Understand a Poem That Means Three Things at Once? · Agnes Teresa Davuri</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f7;--panel:#fff;--ink:#172036;--mute:#586178;--line:#d3d9e6;--r:#3447c9;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1424;--panel:#171d33;--ink:#eaeefb;--mute:#a1a9c4;--line:#2a3252;--r:#8fa0ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:400 18px/1.75 "Public Sans",system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:28px 20px 72px}a{color:var(--r)}
+.back{font-size:14px;text-decoration:none}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;line-height:1.15}h1{font-size:clamp(30px,6vw,46px);margin:20px 0 10px}h2{font-size:28px;margin:44px 0 8px}h3{font-size:22px}
+.sub{color:var(--mute);font-style:italic;margin:0 0 24px}
+img{max-width:100%;height:auto;border-radius:4px;display:block;margin:24px auto 6px;background:#fff}
+em{color:var(--mute)}blockquote{margin:20px 0;padding-left:16px;border-left:3px solid var(--r);color:var(--mute)}
+table{border-collapse:collapse;display:block;overflow-x:auto;font-size:15px}td,th{border:1px solid var(--line);padding:6px 10px;text-align:left}
+code{background:var(--panel);padding:1px 5px;border-radius:3px;font-size:.9em}
+</style></head><body><main>
+<a class="back" href="../../index.html#articles">← All articles</a>
+<h1>Can a Quantum Computer Understand a Poem That Means Three Things at Once?</h1><p class="sub">I encoded 98 verses in six languages as quantum states, ran them on IBM hardware, and found out what it can and cannot do.</p>
+<p><img alt="One verse, three meanings, one density matrix" src="images/01-hero-one-verse-three-meanings.png" /></p>
+<p>Mirza Ghalib wrote: <em>"Hazaron khwahishen aisi ke har khwahish pe dam nikle."</em> Thousands of desires, each so strong it takes my breath away.</p>
+<p>What does it mean? That longing is a slow death. Or that every wish is so intense it feels fatal. Or that the speaker is pulled in a thousand directions at once. A grieving reader finds the first, a lover finds the second, a philosopher finds the third. None of them is wrong.</p>
+<p>And here is the odd thing about how computers read poetry. A standard language model gives that verse exactly one list of 768 numbers. One point in space. One meaning. The other two are lost, and a Sufi mystic and a feminist critic get the same answer.</p>
+<h4>An idea borrowed from physics</h4>
+<p>Quantum mechanics has a precise word for something being several things until you look: superposition. A particle holds several states at once until a measurement forces a choice, and <em>what you measure with</em> shapes which choice you get.</p>
+<p>That is close to how readers work. The verse holds several meanings, and the reader's context, whether grief, love, or philosophy, picks one.</p>
+<p>So instead of one vector per poem, QuLit gives each poem a <strong>density matrix</strong>: a 16 by 16 grid of numbers that can represent several meanings at once. Then it "measures" the grid with 12 reader contexts (grief, love, Sufi, feminist, ironic and so on), and different contexts bring out different readings of the same verse.</p>
+<h4>What I built</h4>
+<ul>
+<li><strong>QuLitBench:</strong> 98 verses by hand, across Urdu, Hindi, English, Sanskrit, Tamil and Arabic, from 35+ authors over 2,000 years, each with three independent, valid interpretations that I wrote.</li>
+<li><strong>A quantum circuit</strong> with four qubits that turns a verse's embedding into the density matrix.</li>
+<li><strong>QLAS:</strong> a score for how ambiguous a verse is, combining entropy, how much the meanings interfere, and how much the reading changes with context.</li>
+<li><strong>An explorer:</strong> paste any verse, see how its meaning shifts across contexts.</li>
+<li><strong>A run on real IBM quantum hardware,</strong> compared against a noise-free simulator.</li>
+</ul>
+<h4>What the numbers said</h4>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>QuLit</th>
+<th>Best classical</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cross-lingual similarity (correlation with human judgments, 20 verse pairs)</td>
+<td>0.625</td>
+<td>0.582 (LaBSE)</td>
+</tr>
+<tr>
+<td>Classifying a verse's ambiguity type (F1)</td>
+<td>0.514</td>
+<td>0.429 (LaBSE)</td>
+</tr>
+</tbody>
+</table>
+<p>A clear lead on a small test. Here is why I would not oversell it.</p>
+<p><img alt="QuLit against four classical baselines on two tasks" src="images/02-scoreboard.png" /></p>
+<h4>The honest asterisks</h4>
+<ul>
+<li><strong>The test is small.</strong> 98 verses and 20 pairs mean a few verses can move any number a lot.</li>
+<li><strong>My comparison is not perfectly fair.</strong> QuLit measured similarity through English translations, while the classical models read the original scripts. Part of the gain may simply be translation, not quantum.</li>
+<li><strong>Only 4 of 768 numbers go into the circuit.</strong> To fit four qubits, I used the first four values of each embedding. Whatever the circuit captures, it is working from a very thin slice of the verse.</li>
+<li><strong>The quantum part may not be necessary.</strong> I ran an ablation, but I have not yet shown that a classical model with the same context operators could not do equally well.</li>
+<li><strong>I have not yet tested the human side.</strong> My evaluation protocol with three annotators is designed, but I do not report it because I do not have real annotator results yet.</li>
+</ul>
+<h4>What is real</h4>
+<p>The framework is complete and open: the dataset, the encoder, the measurement idea, the metric, the explorer. The circuits really ran on IBM hardware. And the cross-lingual idea is the one I find most moving: the entanglement score is built to notice when verses from different languages share a meaning space with no parallel text, such as a Tamil line from about 200 BCE, "every place is my hometown, every person is my kin", and John Donne's "no man is an island", 1,800 years apart.</p>
+<p>If you take one idea from this: a poem is not a point, it is a distribution, and any system that gives it a single number has already decided what it means.</p>
+<p><em>Full details: <a href="../../papers/QuLit_Technical_Documentation.docx">QuLit technical documentation (Word)</a></em></p>
+</main></body></html>

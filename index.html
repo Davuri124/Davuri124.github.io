@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agnes Teresa Davuri · Research and fiction</title>
+<meta name="description" content="Agnes Teresa Davuri: ML research (causal ML, agentic LLMs, RL, quantum) with live demos, and long-form fiction.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🪐%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,500&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f7;--panel:#fff;--ink:#172036;--mute:#586178;--line:#d3d9e6;--r:#3447c9;--f:#8c2f5d;--on:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1424;--panel:#171d33;--ink:#eaeefb;--mute:#a1a9c4;--line:#2a3252;--r:#8fa0ff;--f:#f08cbc;--on:#0f1424}}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.6 "Public Sans",system-ui,sans-serif}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;margin:0;line-height:1.1}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--r);outline-offset:2px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+nav{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+nav .wrap{display:flex;justify-content:space-between;align-items:center;height:56px;gap:16px}
+nav b{font:700 18px Fraunces,Georgia,serif}nav div{display:flex;gap:18px;font-size:14px;flex-wrap:wrap}nav a{text-decoration:none;color:var(--mute)}nav a:hover{color:var(--ink)}
+.hero{padding:64px 0 32px}
+.hero h1{font-size:clamp(44px,9vw,96px);font-weight:700;letter-spacing:-.02em}
+.hero p{max-width:56ch;color:var(--mute);font-size:18px;margin:20px 0 0}
+.doors{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:36px}
+.door{display:block;text-decoration:none;padding:28px;border-radius:6px;color:var(--on);min-height:170px;display:flex;flex-direction:column;justify-content:space-between}
+.door.r{background:var(--r)}.door.f{background:var(--f)}
+.door h2{font-size:34px}.door span{font-size:15px;opacity:.92;max-width:34ch}
+.door:hover{filter:brightness(1.08)}
+section{padding:56px 0}
+section>.wrap>h2{font-size:clamp(30px,5vw,44px);margin-bottom:8px}
+.lede{color:var(--mute);max-width:62ch;margin:0 0 28px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:12px}
+.card h3{font-size:22px}.card .yr{color:var(--mute);font-size:13px}
+.card p{margin:0;font-size:15px}
+.stat{font:600 17px Fraunces,Georgia,serif;color:var(--r)}
+.neg{border-left:3px solid var(--line);padding-left:12px;color:var(--mute);font-size:14px}
+.neg b{color:var(--ink);font-weight:600}
+.tags{display:flex;flex-wrap:wrap;gap:6px}.tags i{font-style:normal;font-size:12px;padding:2px 9px;border:1px solid var(--line);border-radius:99px;color:var(--mute)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:4px;align-items:center}
+.btn{font-size:14px;font-weight:500;text-decoration:none;padding:7px 14px;border-radius:4px;border:1px solid var(--r);color:var(--r)}
+.btn.main{background:var(--r);color:var(--on)}.btn:hover{filter:brightness(1.12)}
+.docs{font-size:13px;color:var(--mute)}.docs a{color:var(--r)}
+.soon{font-size:13px;color:var(--mute)}
+#fiction .stat{color:var(--f)}#fiction .btn{border-color:var(--f);color:var(--f)}
+.thumb{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:4px;background:#fff}
+.books{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:22px}
+.book{display:flex;flex-direction:column;gap:10px}
+.cover{display:block;text-decoration:none;background-color:var(--line);aspect-ratio:2/3;border-radius:3px 8px 8px 3px;display:flex;align-items:flex-end;padding:16px;color:#fff;font:700 22px/1.15 Fraunces,Georgia,serif;box-shadow:inset 6px 0 8px -4px rgba(0,0,0,.35);background-size:cover;background-position:center}
+.book h3{font-size:18px}.book p{margin:0;font-size:14px;color:var(--mute)}
+.book p.tl{font-style:italic;color:var(--ink)}
+.meta{font-size:13px;color:var(--f);font-weight:600}
+.list{display:grid;gap:12px;padding:0;margin:0;list-style:none}
+.list li{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px 20px}
+.list b{font:600 18px Fraunces,Georgia,serif}.list span{display:block;color:var(--mute);font-size:14px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+footer{padding:32px 0 48px;color:var(--mute);font-size:14px;border-top:1px solid var(--line)}
+@media(max-width:640px){.doors{grid-template-columns:1fr}nav div{gap:12px}nav b{display:none}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<nav><div class="wrap"><b>Agnes Teresa Davuri</b><div><a href="#research">Research</a><a href="#articles">Articles</a><a href="#fiction">Fiction</a><a href="#writing">Writing</a><a href="#about">About</a><a href="#contact">Contact</a></div></div></nav>
+
+<header class="hero"><div class="wrap">
+<h1>I build AI systems and write long stories.</h1>
+<p>Computer Science graduate from NIT Warangal. Ten research projects in causal ML, agentic LLMs, reinforcement learning and quantum computing, each with public code and honestly reported results. A multi-book saga in progress.</p>
+<div class="doors">
+<a class="door r" href="#research"><h2>Research</h2><span>10 projects, 9 live demos, code, articles and full reports.</span></a>
+<a class="door f" href="#fiction"><h2>Fiction</h2><span>A multi-book saga and six more stories on Wattpad.</span></a>
+</div></div></header>
+
+<section id="research"><div class="wrap">
+<h2>Research projects</h2>
+<p class="lede">Every project links to its code. Where there is a live demo, it runs right here in your browser. Each card also says what did not work.</p>
+<div class="grid" id="rgrid"></div>
+</div></section>
+
+<section id="articles"><div class="wrap">
+<h2>Articles</h2>
+<p class="lede">Plain-language write-ups of the projects, including what went wrong.</p>
+<div class="grid" id="agrid"></div>
+</div></section>
+
+<section id="fiction"><div class="wrap">
+<h2>Fiction</h2>
+<p class="lede">Found-family sagas, slow-burn romance and tragedy, written in English with Hindi and Hinglish in places.</p>
+<div class="books" id="bgrid"></div>
+</div></section>
+
+<section id="writing"><div class="wrap">
+<h2>Short writing</h2>
+<p class="lede">Poetry, letters and reflections in English, Hindi and Hinglish.</p>
+<ul class="list" id="wlist"></ul>
+</div></section>
+
+<section id="about"><div class="wrap">
+<h2>About and résumés</h2>
+<p class="lede">I started in data engineering (AWS pipelines at Intarinz) and moved into research. I report negative results because they tell you what to trust. Pick the résumé that fits.</p>
+<div class="cols">
+<div class="card"><h3>Research résumé</h3><p>ML and AI roles: projects, methods, skills.</p><div class="btns"><a class="btn main" href="resume/Agnes_Teresa_Davuri_Research_Resume.pdf">Download PDF</a></div></div>
+<div class="card"><h3>Writer résumé</h3><p>Content, technical writing and fiction.</p><div class="btns"><a class="btn main" href="resume/Agnes_Teresa_Davuri_Writer_Resume.pdf">Download PDF</a></div></div>
+</div></div></section>
+
+<section id="contact"><div class="wrap">
+<h2>Contact</h2>
+<p class="lede"><a href="mailto:agnesteresa001@gmail.com">agnesteresa001@gmail.com</a> · <a href="https://github.com/Davuri124">GitHub</a> · <a href="https://linkedin.com/in/agnes-teresa-davuri-b79948434">LinkedIn</a></p>
+</div></section>
+<footer><div class="wrap">© 2026 Agnes Teresa Davuri</div></footer>
+
+<script>
+const GH="https://github.com/Davuri124/";
+const R=[
+{t:"Causal-RAG",y:2026,s:"Four cooperating agents approve, decline or refer lending decisions and attach a causal audit trail.",st:"589K real Lending Club loans",n:"Causal evidence added no measurable AUROC over a flags-only baseline (0.678 vs 0.668).",tg:["Causal ML","Agents","LLM"],c:"Casual-RAG",d:"causal-rag",w:[["Project report (PDF)","papers/Causal_RAG_Project_Report.pdf"]]},
+{t:"Budget-Constrained RL Orchestrator",y:2026,s:"A PPO policy decides when to automate, re-retrieve, call a stronger model or ask a human, under a hard review budget.",st:"0 budget violations on HotpotQA",n:"Beat the strongest paced baseline in 4 of 15 settings (10 ties, 1 loss).",tg:["RL","PPO","Human-in-the-loop"],c:"hitl-orchestrator",d:"hitl-orchestration",w:[["Project report (PDF)","papers/HITL_Project_Report.pdf"]]},
+{t:"SOLAR",y:2026,s:"Label-efficient evaluation of detectors and LLM judges: can you trust a detector on your own data?",st:"~200 labels, ~10x lower error",n:"Detectors did not transfer: cross-dataset AUC fell 0.11–0.27 on 6 of 7 datasets.",tg:["Evaluation","Statistics","LLM"],c:"SOLAR",d:"solar",w:[["Project report (PDF)","papers/SOLAR_Project_Report.pdf"],["Complete documentation","papers/SOLAR_Complete_Documentation.docx"]]},
+{t:"CALF",y:2026,s:"A causally ordered neural architecture for treatment effect estimation, applied to insurance underwriting.",st:"Lowest PEHE of 5 baselines",n:"Null result on insurance underwriting.",tg:["Causal ML","PyTorch"],c:"CALF",d:"calf",w:[["Technical reference","papers/CALF_Complete_Technical_Reference.docx"],["Reference v2","papers/CALF_Complete_Reference_V2.docx"],["Insurance technical report","papers/CALF_Insurance_Technical_Report.docx"],["Underwriting report","papers/CALF_Insurance_Underwriting_Report.docx"]]},
+{t:"RLHIL",y:"2025–26",s:"Constrained-MDP framework for deciding when a human should step into an AI pipeline.",st:"~96% decision boundary accuracy",tg:["RL","CMDP","PPO"],c:"Human_Intervention_Points",d:"rlhil",w:[["Final document","papers/RLHIL_Complete_Final_Document.docx"]]},
+{t:"QuLit",y:"2025–26",s:"Multilingual literary text encoded as quantum density matrices, run on real IBM hardware.",st:"6 languages, beats mBERT",tg:["Quantum","NLP","Qiskit"],d:"qulit-hermes",w:[["Technical documentation","papers/QuLit_Technical_Documentation.docx"]]},
+{t:"HERMES",y:"2025–26",s:"Reader-adaptive literary interpretation: culture × era × emotion, extending QuLit.",st:"r = 0.79 cross-cultural alignment",n:"Decoder collapse, and one metric is not yet significant.",tg:["NLP","PyTorch"],c:"HERMES",d:"qulit-hermes",w:[["Detailed document","papers/HERMES_Detailed_Document.docx"]]},
+{t:"Grover Noise Fingerprinting",y:"2025–26",s:"A formal theorem for the best Grover iteration count on noisy hardware, plus a readiness metric.",st:"46% vs 36% success on real IBM hardware",n:"",tg:["Quantum","IBM 156-qubit","Qiskit"],c:"Grover-Algorithm-on-NISQ-devices",d:"grover-noise",w:[["Full report","papers/Grover_NISQ_Full_Report.docx"]]},
+{t:"Osmotic Attention",y:2026,s:"An information-gradient term added to attention logits, tested across 11 experimental phases.",st:"5 seeds, bootstrap CIs",n:"A small real negative effect when injected into pretrained BERT.",tg:["Transformers","PyTorch"],c:"osmotic-attention",d:"osmotic",w:[["Final report","papers/Osmotic_Attention_Final_Report.docx"]]},
+{t:"Predictive Quantum Governance",y:"2025–26",s:"Metadata-driven AI orchestration with quantum-assisted decisions and Kafka streaming.",st:"29.6% risk reduction vs 15% for the baseline",tg:["Governance","Qiskit","Kafka"],c:"Metadata_Orchestration_Pipeline",d:"governance",w:[["Thesis (PDF)","papers/Predictive_Quantum_Governance_Thesis.pdf"]]}
+];
+const el=(tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e};
+const rg=document.getElementById("rgrid");
+R.forEach(p=>{
+ const c=el("article","card");
+ c.append(el("h3","",p.t),el("div","yr",p.y),el("p","",p.s),el("div","stat",p.st));
+ if(p.n)c.append(el("div","neg","<b>What didn’t work:</b> "+p.n));
+ c.append(el("div","tags",p.tg.map(x=>"<i>"+x+"</i>").join("")));
+ const b=el("div","btns");
+ if(p.d)b.append(el("a","btn main",'Live demo')),b.lastChild.href="demos/"+p.d+"-demo.html";
+ else b.append(el("span","soon","Live demo coming soon"));
+ if(p.c){const a=el("a","btn","Code");a.href=GH+p.c;b.append(a)}
+
+ c.append(b);
+ if(p.w){const dv=el("div","docs","Documents: ");p.w.forEach((x,i)=>{const a=el("a","",x[0]);a.href=x[1];if(i)dv.append(" · ");dv.append(a)});c.append(dv)}
+ rg.append(c);
+});
+const A=[{"t": "The textbook says run it three times. On a real quantum computer, twice works 28% better.", "s": "What I learned running Grover's algorithm on two 156-qubit IBM machines, and the small formula that predicts when to stop.", "u": "articles/grover/", "i": "articles/grover/images/01-hero-two-steps-beat-three.png", "m": ""}, {"t": "I Built a Causal AI for Lending. The Real Finding Was That a Prompt Behaved Like a Hard Rule.", "s": "Seven runs, 589,099 real loans, and an audit that caught my own mistakes.", "u": "articles/causal-rag/", "i": "articles/causal-rag/images/01-hero-cliff-test.png", "m": ""}, {"t": "My AI Beat Every Baseline With an Effect Size of 19. That Number Should Have Scared Me.", "s": "How I trained an agent to decide when a human should step in, and why the first result was too good.", "u": "articles/rlhil/", "i": "articles/rlhil/images/01-hero-effect-sizes.png", "m": ""}, {"t": "I Built an AI That Beat the Best Baseline. Then I Pointed It at Insurance and It Did Nothing.", "s": "Why a smarter architecture only helps when your data has the structure it expects.", "u": "articles/calf/", "i": "articles/calf/images/01-hero-win-then-tie.png", "m": ""}, {"t": "Does a Poem Mean the Same Thing to Everyone? I Built a Model That Says No.", "s": "HERMES models the reader, not just the text, and it found something surprising about Tamil poetry.", "u": "articles/hermes/", "i": "articles/hermes/images/01-hero-poems-that-rhyme-across-cultures.png", "m": ""}, {"t": "I Borrowed an Idea From Osmosis to Improve Transformers. After 11 Experiments, Mostly It Hurt.", "s": "A fair test of a new attention mechanism, including the one place it helped and the theory check I had to retract.", "u": "articles/osmotic-attention/", "i": "articles/osmotic-attention/images/01-hero-same-idea-opposite-results.png", "m": ""}, {"t": "My Governance System Scored Worse Than Doing Nothing. That Was the Point.", "s": "An AI orchestration framework, five real datasets, and the one metric that was lying to me.", "u": "articles/quantum-governance/", "i": "articles/quantum-governance/images/01-hero-looks-worse-works-better.png", "m": ""}, {"t": "I Rebuilt My Best AI Result With Real Data. The Win Almost Disappeared.", "s": "What a human-review budget, 2,000 real questions and a pre-registration taught me about credit I did not deserve.", "u": "articles/hitl-orchestrator/", "i": "articles/hitl-orchestrator/images/01-hero-where-the-gain-came-from.png", "m": ""}, {"t": "Can a Quantum Computer Understand a Poem That Means Three Things at Once?", "s": "I encoded 98 verses in six languages as quantum states, ran them on IBM hardware, and found out what it can and cannot do.", "u": "articles/qulit/", "i": "articles/qulit/images/01-hero-one-verse-three-meanings.png", "m": ""}, {"t": "I Built a Seven-Agent Misinformation Detector Named After the Planets. Then I Audited It, and It Failed.", "s": "It began as a speech to 10th graders. It ended as a lesson in how a good score can hide a broken experiment.", "u": "articles/solar/", "i": "articles/solar/images/01-hero-solar-cover.png", "m": ""}];
+const ag=document.getElementById("agrid");
+A.forEach(a=>{
+ const c=el("article","card");
+ if(a.i){const im=el("img","thumb");im.src=a.i;im.alt="";im.loading="lazy";c.append(im)}
+ c.append(el("h3","",a.t),el("p","",a.s));
+ const b=el("div","btns");
+ if(a.u){const r=el("a","btn main","Read");r.href=a.u;b.append(r)}else b.append(el("span","soon","Coming soon"));
+ if(a.m){const m=el("a","btn","On Medium");m.href=a.m;b.append(m)}
+ c.append(b);ag.append(c);
+});
+const B=[
+{t:"Queen (with Curse)",g:"Found-family saga",m:"Book 1 on Wattpad · 3 volumes drafted, 228 chapters",q:"Same people. Different galaxies. Always us.",x:"My chaos. My home. My queen.",i:"queen-with-curse",l:"https://www.wattpad.com/story/403867798-queen-with-curse-1"},
+{t:"Loving You Is a Losing Game",g:"Fantasy romance",m:"Published on Wattpad",q:"He had the power to rule the heavens… but not the strength to save himself.",x:"(I Won… Losing Everything)",i:"loving-you-is-a-losing-game",l:"https://www.wattpad.com/story/410155683-loving-you-is-a-loosing-game-i-won-loosing"},
+{t:"When the Star Misread the Moonlight",g:"Slow-burn",m:"Published on Wattpad",q:"He mistook her silence for distance, and her light for goodbye.",x:"A story of two souls, two worlds and one unwritten destiny.",i:"when-the-star-misread-the-moonlight",l:"https://www.wattpad.com/story/412608173-when-the-star-misread-the-moonlight"},
+{t:"98.2 & 99.4",g:"Friendship",m:"Published on Wattpad",q:"Some bonds score higher than numbers.",x:"Because home was never a place — it was always each other.",i:"98-2-and-99-4",l:"https://www.wattpad.com/story/416452467-98-2-99-4"},
+{t:"Do Akshar",g:"Tragedy",m:"Published on Wattpad",q:"",x:"",i:"do-akshar",l:"https://www.wattpad.com/story/416750531-do-akshar"},
+{t:"Be Alive",g:"Military romance",m:"Published on Wattpad",q:"Because every time they go to war… they don’t say be safe, they say be alive.",x:"A story of duty. Love. Return. Two soldiers. One promise. In every lifetime.",i:"be-alive",l:"https://www.wattpad.com/story/412609216-be-alive"},
+{t:"Until My Lyrics Find Rhythm",g:"Slow-burn royal romance",m:"Published on Wattpad",q:"His pen writes. Her heart dances.",x:"Her rhythm became my lyrics.",i:"until-my-lyrics-find-rhythm",l:"https://www.wattpad.com/story/412609367-until-my-lyrics-find-rhythm"}
+];
+const bg=document.getElementById("bgrid");
+B.forEach(k=>{
+ const d=el("article","book");
+ const cv=el("a","cover","");cv.href="fiction/"+k.i+"/";cv.setAttribute("aria-label","Cover of "+k.t+": read the description");
+ cv.style.backgroundImage="url(covers/"+k.i+".jpg)";
+ const h3=el("h3","");const ha=el("a","",k.t);ha.href="fiction/"+k.i+"/";ha.style.textDecoration="none";h3.append(ha);d.append(cv,h3,el("div","meta",k.g),el("p","",k.m));
+ if(k.q)d.append(el("p","tl",k.q));
+ if(k.x)d.append(el("p","",k.x));
+ if(k.l){const b=el("div","btns"),r=el("a","btn main","Description");r.href="fiction/"+k.i+"/";const a=el("a","btn","Read on Wattpad");a.href=k.l;a.target="_blank";a.rel="noopener";b.append(r,a);d.append(b)}
+ bg.append(d);
+});
+const W=[["Dharma ka Marg","A persuasive piece on Karna and Arjuna’s choices (Hindi/Hinglish)."],["The Promise","A wedding-vow dialogue."],["Poems, letters and reflections","English, Hindi and Hinglish."]];
+const wl=document.getElementById("wlist");
+W.forEach(w=>wl.append(el("li","","<b>"+w[0]+"</b><span>"+w[1]+"</span>")));
+</script>
+</body>
+</html>

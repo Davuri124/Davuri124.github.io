@@ -1,0 +1,51 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My AI Beat Every Baseline With an Effect Size of 19. That Number Should Have Scared Me. · Agnes Teresa Davuri</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f7;--panel:#fff;--ink:#172036;--mute:#586178;--line:#d3d9e6;--r:#3447c9;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1424;--panel:#171d33;--ink:#eaeefb;--mute:#a1a9c4;--line:#2a3252;--r:#8fa0ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:400 18px/1.75 "Public Sans",system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:28px 20px 72px}a{color:var(--r)}
+.back{font-size:14px;text-decoration:none}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;line-height:1.15}h1{font-size:clamp(30px,6vw,46px);margin:20px 0 10px}h2{font-size:28px;margin:44px 0 8px}h3{font-size:22px}
+.sub{color:var(--mute);font-style:italic;margin:0 0 24px}
+img{max-width:100%;height:auto;border-radius:4px;display:block;margin:24px auto 6px;background:#fff}
+em{color:var(--mute)}blockquote{margin:20px 0;padding-left:16px;border-left:3px solid var(--r);color:var(--mute)}
+table{border-collapse:collapse;display:block;overflow-x:auto;font-size:15px}td,th{border:1px solid var(--line);padding:6px 10px;text-align:left}
+code{background:var(--panel);padding:1px 5px;border-radius:3px;font-size:.9em}
+</style></head><body><main>
+<a class="back" href="../../index.html#articles">← All articles</a>
+<h1>My AI Beat Every Baseline With an Effect Size of 19. That Number Should Have Scared Me.</h1><p class="sub">How I trained an agent to decide when a human should step in, and why the first result was too good.</p>
+<p><img alt="Effect sizes of the trained agent against three baselines. The one on the right is 19.05." src="images/01-hero-effect-sizes.png" /></p>
+<p>Every automated system has a quiet design question: when should it stop and ask a person?</p>
+<p>Ask too often and you have defeated the point of automation. Ask too rarely and a confident wrong answer slips through. Most systems answer with a fixed rule, like "escalate if confidence is below 70%". I wanted to find out whether a system could <strong>learn</strong> when to ask.</p>
+<h2>The setup</h2>
+<p>I treated it as a reinforcement-learning problem. At each step of a pipeline, an agent sees how uncertain the model is and chooses: continue, or bring in a human. It is trained with PPO, and I framed human attention as a <em>constrained</em> resource, using a constrained Markov decision process so that "ask a human" costs something.</p>
+<p>Then I added three ideas to make it practical:</p>
+<ul>
+<li><strong>Curriculum learning:</strong> train on easy cases first, then medium, then hard.</li>
+<li><strong>Meta-learning (MAML):</strong> so it can adapt to a brand-new pipeline quickly.</li>
+<li><strong>Robustness tests:</strong> attack the observations and see if the policy survives.</li>
+</ul>
+<h2>The results</h2>
+<p>I ran more than 200 experiment configurations.</p>
+<p><img alt="Curriculum training converges faster and more steadily than standard PPO" src="images/02-curriculum-convergence.png" /></p>
+<p>Curriculum training converged to a high reward in a handful of iterations. Standard PPO wandered for 60.</p>
+<p><img alt="Fast adaptation to an unseen pipeline" src="images/03-fast-adaptation.png" /></p>
+<p>The meta-learned agent adapted to a new pipeline in five gradient updates and beat a PPO agent trained from scratch on every measure.</p>
+<p><img alt="Robustness under four kinds of adversarial attack" src="images/04-robustness.png" /></p>
+<p>Under four adversarial attacks, it kept at least 92% of its clean performance. And the headline: against "always intervene" the effect size was <strong>Cohen's d = 19.05</strong>.</p>
+<h2>Why that number should scare you</h2>
+<p>A Cohen's d above 0.8 counts as large. Mine was above 19. That does not mean the agent is magical. It means the baseline is terrible. "Always intervene" loses to almost anything, because it spends the whole review budget on cases that did not need it.</p>
+<p>Even on real credit-card-fraud data, "never intervene" scored 14.90 against my agent's 15.05. That is nearly a tie.</p>
+<p>I wrote this in the paper, along with something else: my first test of the fast-adaptation result gave p = 0.055, just short of significance. I reran it with more trials and it passed. I flagged that as a post-hoc fix, and said future work should pre-register.</p>
+<h2>What happened next</h2>
+<p>That honest sentence is why there is a second article. I took the whole idea and rebuilt it with real language models, real questions, a hard review budget and baselines as smart as my agent. <strong>The win shrank to almost nothing.</strong> Read the sequel: <em>Weak baselines produce impressive charts.</em></p>
+<h2>What I would tell you</h2>
+<ol>
+<li>A giant effect size is a warning about your baseline, not a trophy.</li>
+<li>If a test misses significance and you rerun it with more trials, say so.</li>
+<li>Robustness and fast adaptation are worth testing, but only against opponents worth beating.</li>
+</ol>
+<p>Code: github.com/Davuri124/Human_Intervention_Points</p>
+</main></body></html>

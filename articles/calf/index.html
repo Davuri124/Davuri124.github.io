@@ -1,0 +1,57 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>I Built an AI That Beat the Best Baseline. Then I Pointed It at Insurance and It Did Nothing. · Agnes Teresa Davuri</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f7;--panel:#fff;--ink:#172036;--mute:#586178;--line:#d3d9e6;--r:#3447c9;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1424;--panel:#171d33;--ink:#eaeefb;--mute:#a1a9c4;--line:#2a3252;--r:#8fa0ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:400 18px/1.75 "Public Sans",system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:28px 20px 72px}a{color:var(--r)}
+.back{font-size:14px;text-decoration:none}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;line-height:1.15}h1{font-size:clamp(30px,6vw,46px);margin:20px 0 10px}h2{font-size:28px;margin:44px 0 8px}h3{font-size:22px}
+.sub{color:var(--mute);font-style:italic;margin:0 0 24px}
+img{max-width:100%;height:auto;border-radius:4px;display:block;margin:24px auto 6px;background:#fff}
+em{color:var(--mute)}blockquote{margin:20px 0;padding-left:16px;border-left:3px solid var(--r);color:var(--mute)}
+table{border-collapse:collapse;display:block;overflow-x:auto;font-size:15px}td,th{border:1px solid var(--line);padding:6px 10px;text-align:left}
+code{background:var(--panel);padding:1px 5px;border-radius:3px;font-size:.9em}
+</style></head><body><main>
+<a class="back" href="../../index.html#articles">← All articles</a>
+<h1>I Built an AI That Beat the Best Baseline. Then I Pointed It at Insurance and It Did Nothing.</h1><p class="sub">Why a smarter architecture only helps when your data has the structure it expects.</p>
+<p><img alt="CALF beat Causal Forest on life-course data, then tied on insurance data" src="images/01-hero-win-then-tie.png" /></p>
+<p>Suppose a university wants to know what college would do for one specific student. Not the average student, but this one. That is called an individual treatment effect, and it can never be observed directly, because you cannot send the same person to college and not to college.</p>
+<p>Most machine-learning tools for this problem toss every piece of information about a person into one big list. But the facts in that list are not equal. Family background comes before school, school before friends, and friends before the choices a person makes. I wanted a model that knew that.</p>
+<h4>The idea: a tree with four layers</h4>
+<p>CALF (Causally-Aware Layered Fabric) sorts a person's data into four groups and passes information down through them in order:</p>
+<ol>
+<li><strong>Roots:</strong> fixed background, such as family income and parental education.</li>
+<li><strong>Soil:</strong> environment, such as school quality.</li>
+<li><strong>Leaves:</strong> social context, such as peers.</li>
+<li><strong>Choice:</strong> the person's own decisions.</li>
+</ol>
+<p>Each layer can look back at the one above it through attention, the same mechanism behind modern language models. I also proved that, under standard assumptions, the individual effect can be recovered from this structure.</p>
+<h4>Where it worked</h4>
+<p>Real individual effects are never known, so researchers test on semi-synthetic data: real-looking people with a simulated outcome, so the true answer is known. I used 8,984 people modeled on a long-running US youth survey, with college attendance as the treatment and later income as the outcome.</p>
+<p>On the standard error measure (PEHE, lower is better), CALF scored 20,119 against 22,805 for Causal Forest, the strongest baseline. That is about 12% better, and the difference was statistically significant. It beat T-Learner, X-Learner and BART too. DragonNet collapsed completely and predicted almost no effect at all.</p>
+<p>I also took the model apart. Removing the Roots layer made it 38.5% worse. Replacing the whole structure with a plain neural network made it 18.5% worse. So the layered design was doing real work.</p>
+<p><img alt="Removing a layer: the Roots layer mattered most; Leaves slightly hurt" src="images/02-ablation-what-mattered.png" /></p>
+<h4>Where it did not</h4>
+<p>The honest results are the more interesting ones.</p>
+<ul>
+<li><strong>The Leaves layer was dead weight.</strong> Removing peer context made the model slightly <em>better</em> (19,885 vs 20,119).</li>
+<li><strong>Averages got worse as individuals got better.</strong> CALF's overall effect estimate was off by 4.4%, versus 2.2% for Causal Forest.</li>
+<li><strong>It needs lots of data.</strong> With 10% of the training set, CALF's error was 60,233 against Causal Forest's 27,979. It only overtakes Causal Forest at about 70% of the data.</li>
+<li><strong>Its uncertainty was overconfident.</strong> Intervals meant to cover 90% of the truth covered only 66.9%.</li>
+<li><strong>On standard benchmarks it did not win.</strong> On IHDP, a popular test set, Causal Forest scored 0.44 and CALF 1.03.</li>
+</ul>
+<h4>The experiment that taught me the most</h4>
+<p>I took CALF, changed nothing, and used it to decide whether to accept or decline motor-insurance policies, wrapped in an eight-stage pipeline that produces five audit documents per policy and passes all 15 of its governance checks.</p>
+<p>The prediction error was 1,991.099 for CALF and between 1,991.116 and 1,991.165 for the other four methods, including a plain actuarial formula that insurers have used for decades. The difference was about 0.001%. Effectively zero.</p>
+<p>It is tempting to hide a result like that. But it explained the whole project. CALF's advantage came from layered structure that exists in life-course data, where family shapes school and school shapes choices. My insurance data, which I generated from a simulator, did not have that structure: the claim amounts were dominated by large random draws that had little to do with the risk factors. A clever architecture cannot find structure that is not there.</p>
+<p>Two caveats I will not hide: both datasets are semi-synthetic, so these results say how well the model recovers a <em>simulated</em> world, and the insurance null may partly reflect how I built the simulator.</p>
+<h4>What I would tell you</h4>
+<ul>
+<li>Before you adopt a fancier model, ask whether your data has the structure the model assumes.</li>
+<li>A well-governed pipeline around a weak signal is still a weak signal. Passing 15 of 15 audit checks does not make a prediction correct.</li>
+<li>Report where the model fails, including the small-data regime. A buyer deciding whether to use your tool needs it more than the headline number.</li>
+</ul>
+<p>Code: github.com/Davuri124/CALF</p>
+</main></body></html>

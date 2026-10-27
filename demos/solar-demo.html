@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SOLAR: can you trust a detector on your own data?</title>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f1ea;--panel:#fffefa;--ink:#201a2e;--mute:#675f75;--line:#e1d9e6;--a:#b8590e;--b:#5b3fa0;--c:#2d7d6e;--bad:#b3342f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#17131f;--panel:#1f1a29;--ink:#efe9f6;--mute:#aaa1b8;--line:#37304a;--a:#f0a05a;--b:#a68ae0;--c:#5cc7b3;--bad:#f08882}}
+:root[data-theme="dark"]{--bg:#17131f;--panel:#1f1a29;--ink:#efe9f6;--mute:#aaa1b8;--line:#37304a;--a:#f0a05a;--b:#a68ae0;--c:#5cc7b3;--bad:#f08882}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:920px;margin:0 auto;padding:32px 20px 48px}
+h1{font:700 clamp(28px,5vw,42px)/1.15 Newsreader,Georgia,serif;margin:0 0 12px;max-width:20ch}
+h2{font:700 22px/1.25 Newsreader,Georgia,serif;margin:30px 0 8px}
+.lede,.note{color:var(--mute);max-width:68ch}.note{font-size:14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:12px 0}
+.card{border-left:3px solid var(--a);padding-left:10px}.card b{display:block;font:700 24px/1.2 Newsreader,Georgia,serif;font-variant-numeric:tabular-nums}.card span{font-size:13px;color:var(--mute)}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+button{font:500 14px "IBM Plex Sans",sans-serif;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer}
+button[aria-pressed=true]{background:var(--b);border-color:var(--b);color:#fff}
+button:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+.ag{display:grid;grid-template-columns:130px 1fr 44px 1fr 52px;gap:8px;align-items:center;font-size:13px;margin:5px 0}
+.ag input{width:100%;accent-color:var(--b)}.ag .bt{position:relative;height:10px;background:color-mix(in srgb,var(--line) 60%,transparent);border-radius:3px}.ag .bt i{position:absolute;top:0;left:0;height:10px;border-radius:3px;background:var(--a)}
+.ag span:nth-child(3),.ag span:nth-child(5){text-align:right;font-variant-numeric:tabular-nums;color:var(--mute)}
+.hd{color:var(--mute);font-size:12px}
+.verdict{font:700 28px/1.2 Newsreader,Georgia,serif}
+pre{background:color-mix(in srgb,var(--line) 40%,transparent);border-radius:8px;padding:12px;overflow-x:auto;font:400 12px/1.5 "IBM Plex Mono",ui-monospace,monospace;margin:8px 0 0}
+label{display:block;font-weight:500;font-size:14px}label output{float:right;color:var(--mute);font-variant-numeric:tabular-nums}
+input[type=range]{accent-color:var(--b)}.sl{width:100%;margin-top:6px}
+table{border-collapse:collapse;width:100%;font-size:14px}td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}td:first-child,th:first-child{text-align:left}.sc{overflow-x:auto}
+.bars div{display:grid;grid-template-columns:150px 1fr 64px;gap:8px;align-items:center;font-size:13px;margin:4px 0}
+.bars .bt{position:relative;height:12px;background:color-mix(in srgb,var(--line) 60%,transparent);border-radius:3px}.bars .bt i{position:absolute;top:0;left:0;height:12px;border-radius:3px}
+.bars span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.warn{border-left:3px solid var(--bad);padding-left:12px;font-size:14px;color:var(--mute);margin:10px 0}
+.bad{color:var(--bad)}a{color:var(--b)}
+.bars div{grid-template-columns:minmax(140px,210px) 1fr 60px}.bars .bt b{position:absolute;top:-3px;width:2px;height:18px;background:var(--ink)}output{float:right;color:var(--mute);font-variant-numeric:tabular-nums}.row button+button{margin-left:0}
+</style>
+</head>
+<body>
+<main>
+<h1 style="max-width:none">Can you trust a detector on your own data? Label 200 items and find out.</h1>
+<p class="lede">SOLAR began as a seven-agent bot and misinformation detector. Auditing it showed most headline claims did not hold, so the project turned into methods for measuring detectors and LLM judges with a small random sample of human labels. Every number below comes from a run in the project, and each pass bar was fixed in the code before the run it judged.</p>
+<div class="cards">
+  <div class="card"><b>−0.11 to −0.27</b><span>AUC on unseen data, 6 of 7 bot datasets</span></div>
+  <div class="card" style="border-color:var(--c)"><b>2.7 vs 28.9 pts</b><span>typical error: 200 labels vs counting flags</span></div>
+  <div class="card" style="border-color:var(--b)"><b>28.7%</b><span>GPT-4 disagrees with humans (1,612 MT-Bench items)</span></div>
+  <div class="card" style="border-color:var(--bad)"><b>2–3% vs 42–46%</b><span>streams that miss the truth: confidence sequence vs ordinary</span></div>
+</div>
+
+<h2>Sample, label, measure</h2>
+<div class="panel">
+  <p class="note" style="margin:0 0 8px">A simulated population of 4,000 items with a weak detector score. Each run draws a human-labeled sample, builds a 95% interval, and checks whether it contains the true share.</p>
+  <div class="row" id="dz" role="group" aria-label="Sampling design"><button data-d="srs">Random sample</button><button data-d="str">Five strata on detector score</button><button id="again">Draw 600 more</button></div>
+  <label>True share of positives <output id="pO"></output><input class="sl" id="P" type="range" min="5" max="90" value="50"></label>
+  <label>Detector AUC (0.5 is useless) <output id="aO"></output><input class="sl" id="A" type="range" min="50" max="90" value="65"></label>
+  <label>Human labels <output id="nO"></output><input class="sl" id="N" type="range" min="50" max="400" step="10" value="200"></label>
+  <div class="cards" aria-live="polite">
+    <div class="card" style="border-color:var(--c)"><b id="s1">–</b><span>of intervals contain the truth (promise: 95%)</span></div>
+    <div class="card"><b id="s2">–</b><span>average half-width, points</span></div>
+    <div class="card" style="border-color:var(--c)"><b id="s3">–</b><span>typical error, labeled sample, points</span></div>
+    <div class="card" style="border-color:var(--bad)"><b id="s4">–</b><span>error of counting detector flags, points</span></div>
+  </div>
+  <canvas id="cb" style="width:100%;height:270px;display:block" role="img" aria-label="Most recent 50 intervals against the true share"></canvas>
+  <p class="note" style="margin:6px 0 0"><span id="prog"></span> Each line is one interval, red if it missed the dashed truth. Set the AUC to 0.5: the interval stays valid and simply gets no help from the detector. In the report, 200 labels gave coverage 0.94 to 0.96 across ten datasets.</p>
+</div>
+
+<h2>Watch an audit stream</h2>
+<div class="panel">
+  <p class="note" style="margin:0 0 8px">Audit one item at a time and check the dashboard after every label. An ordinary interval cries wolf; a confidence sequence is built to be watched continuously.</p>
+  <label>Error rate before the shift <output id="r1O"></output><input class="sl" id="r1" type="range" min="5" max="70" value="29"></label>
+  <label>Error rate after the shift <output id="r2O"></output><input class="sl" id="r2" type="range" min="5" max="70" value="42"></label>
+  <label>Shift happens at item <output id="shO"></output><input class="sl" id="sh" type="range" min="50" max="600" step="10" value="250"></label>
+  <label>Agreed error rate <output id="agO"></output><input class="sl" id="ag" type="range" min="5" max="70" value="29"></label>
+  <div class="row"><button id="play">Play</button><button id="reset">Reset</button><button id="fast" aria-pressed="false">Fast</button></div>
+  <div class="cards" aria-live="polite">
+    <div class="card"><b id="m1">0</b><span>items audited</span></div>
+    <div class="card"><b id="m2">–</b><span>running error rate</span></div>
+    <div class="card" style="border-color:var(--c)"><b id="m5">none</b><span>confidence-sequence alarm at item</span></div>
+    <div class="card" style="border-color:var(--bad)"><b id="m6">none</b><span>ordinary-interval alarm at item</span></div>
+  </div>
+  <canvas id="cc" style="width:100%;height:300px;display:block" role="img" aria-label="Running error rate with confidence band"></canvas>
+  <p class="note" style="margin:6px 0 0">Teal band: confidence sequence, valid at every look. Dashed amber lines: ordinary Wilson interval. An alarm fires when the lower bound passes the agreed rate, from item 10. Set the rate after equal to the rate before to see false alarms. The band is about 1.5 times wider, and a real 8.6-point rise took about 500 labels to flag at the median.</p>
+</div>
+
+<h2>What the experiments found</h2>
+<div class="panel">
+  <div class="row" id="tabs" role="group" aria-label="Experiments"></div>
+  <p class="note" id="cap" style="margin:4px 0 8px"></p><div id="body"></div>
+</div>
+
+<h2>Two quick calculators</h2>
+<div class="panel">
+  <label>Human labels spent on judging a judge <output id="hO"></output><input class="sl" id="H" type="range" min="20" max="800" value="200"></label>
+  <div class="cards"><div class="card" style="border-color:var(--c)"><b id="hw"></b><span>± on GPT-4’s 28.7% error rate (1,612 items)</span></div><div class="card"><b id="hf"></b><span>of the items labeled</span></div></div>
+  <label>Second judge’s agreement with humans <output id="bO"></output><input class="sl" id="B" type="range" min="50" max="95" value="70"></label>
+  <div class="cards"><div class="card" style="border-color:var(--a)"><b id="bp"></b><span>GPT-4 error rate among their disagreements</span></div><div class="card"><b id="bl"></b><span>lift over the 28.7% base (bar: 1.5×)</span></div></div>
+  <p class="note" style="margin:0">GPT-4 agrees with humans 75.5% of the time. If the two judges’ errors were independent, a 70.1% judge predicts 43% GPT-4 error on disagreements; the observed 41.8% matched. A weaker judge flags its own mistakes more than the stronger one’s.</p>
+</div>
+
+<h2>Scorecard</h2>
+<div class="panel sc"><table id="sc"></table></div>
+
+<h2>What the page cannot show</h2>
+<div class="warn">Every simulation treats a dataset’s own label as the human reviewer, and real reviewers err. The pilot planner’s 6% gain is in-sample: it was designed after seeing the three text datasets. The monitoring evidence uses bootstrap streams with mostly constructed shifts, and the demos above are fresh random draws that land near the report’s figures, not on them. The BotShare tool withholds its headline number because both model profiles failed its reliability bar.</div>
+<p class="note">Source: SOLAR project report, Phases 1 to 5 (October 14, 2026).</p>
+</main>
+<script>
+const $=id=>document.getElementById(id),V=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function cv(id){const c=$(id),r=c.getBoundingClientRect(),d=devicePixelRatio||1;c.width=r.width*d;c.height=r.height*d;const x=c.getContext('2d');x.scale(d,d);x.font='12px "IBM Plex Sans",system-ui,sans-serif';return[x,r.width,r.height]}
+const bar=(rows,max,fmt,mark)=>`<div class="bars">${rows.map(r=>`<div><span>${r[0]}</span><span class="bt"><i style="width:${Math.max(.5,Math.min(100,r[1]/max*100)).toFixed(1)}%;background:var(--${r[2]||'b'})"></i>${mark!=null?`<b style="left:${mark/max*100}%"></b>`:''}</span><span>${fmt(r[1])}</span></div>`).join('')}</div>`;
+const tbl=(h,rows)=>`<div class="sc"><table><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</table></div>`;
+const f3=v=>v.toFixed(3),pc=v=>v+'%',pm=v=>'±'+v.toFixed(1),n1=v=>v.toFixed(1);
+addEventListener('resize',()=>{drawB();drawC()});
+
+/* ---- sampling simulation ---- */
+const NP=4000;let y,s,all,strata,truth,flagged,reps=[],run=0,DZ='str',Nn=200;
+function probit(p){if(p<.5)return-probit(1-p);const t=Math.sqrt(-2*Math.log(1-p));return t-(2.515517+.802853*t+.010328*t*t)/(1+1.432788*t+.189269*t*t+.001308*t*t*t)}
+const gauss=()=>Math.sqrt(-2*Math.log(1-Math.random()))*Math.cos(6.2831853*Math.random());
+function build(){const p=+$('P').value/100,d=Math.SQRT2*probit(+$('A').value/100);y=new Uint8Array(NP);s=new Float64Array(NP);let sy=0,fl=0;for(let i=0;i<NP;i++){y[i]=Math.random()<p?1:0;s[i]=gauss()+d*y[i];sy+=y[i];fl+=s[i]>d/2}truth=sy/NP;flagged=fl/NP;all=Array.from({length:NP},(_,i)=>i);const o=all.slice().sort((a,b)=>s[a]-s[b]);strata=[0,1,2,3,4].map(k=>o.slice(k*NP/5,(k+1)*NP/5))}
+function draw(a,k){for(let i=0;i<k;i++){const j=i+Math.floor(Math.random()*(a.length-i)),t=a[i];a[i]=a[j];a[j]=t}}
+function oneRep(){const n=Nn;if(DZ=='srs'){draw(all,n);let m=0;for(let i=0;i<n;i++)m+=y[all[i]];m/=n;return[m,1.96*Math.sqrt(m*(1-m)*n/(n-1)/n*(1-n/NP))]}
+const nh=Math.floor(n/5);let e=0,v=0;for(const a of strata){draw(a,nh);let m=0;for(let i=0;i<nh;i++)m+=y[a[i]];m/=nh;e+=m/5;v+=(1/25)*(1-nh/a.length)*m*(1-m)*nh/(nh-1)/nh}return[e,1.96*Math.sqrt(v)]}
+function labels(){$('pO').textContent=$('P').value+'%';$('aO').textContent=($('A').value/100).toFixed(2);$('nO').textContent=$('N').value;document.querySelectorAll('#dz button[data-d]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.d===DZ))}
+function startB(fresh){labels();Nn=+$('N').value;if(fresh)build();reps=[];go()}
+function go(){const id=++run,tgt=reps.length+600;(function f(){if(id!=run)return;for(let i=0;i<8&&reps.length<tgt;i++)reps.push(oneRep());drawB();if(reps.length<tgt)requestAnimationFrame(f)})()}
+function drawB(){const k=reps.length;if(!k)return;let hit=0,hw=0,er=0;for(const[e,h]of reps){hit+=Math.abs(e-truth)<=h;hw+=h;er+=Math.abs(e-truth)}
+$('s1').textContent=(hit/k*100).toFixed(1)+'%';$('s2').textContent='±'+(hw/k*100).toFixed(1);$('s3').textContent=(er/k*100).toFixed(1);$('s4').textContent=(Math.abs(flagged-truth)*100).toFixed(1);$('prog').textContent=k+' samples drawn; true share '+(truth*100).toFixed(1)+'%.';
+const[x,w,h]=cv('cb'),L=34,sc=v=>L+(w-L-8)*v,rh=(h-22)/50;x.strokeStyle=V('--line');x.fillStyle=V('--mute');for(let t=0;t<=1;t+=.25){x.beginPath();x.moveTo(sc(t),0);x.lineTo(sc(t),h-18);x.stroke();x.fillText(Math.round(t*100)+'%',sc(t)-10,h-4)}
+for(let i=0;i<Math.min(50,k);i++){const[e,hf]=reps[k-1-i],ok=Math.abs(e-truth)<=hf,yy=6+i*rh;x.strokeStyle=ok?V('--c'):V('--bad');x.lineWidth=ok?1.5:2.5;x.beginPath();x.moveTo(sc(Math.max(0,e-hf)),yy);x.lineTo(sc(Math.min(1,e+hf)),yy);x.stroke()}
+x.lineWidth=2;x.strokeStyle=V('--ink');x.setLineDash([5,4]);x.beginPath();x.moveTo(sc(truth),0);x.lineTo(sc(truth),h-18);x.stroke();x.setLineDash([]);x.lineWidth=1.5;x.strokeStyle=V('--a');x.beginPath();x.moveTo(sc(flagged),0);x.lineTo(sc(flagged),h-18);x.stroke();x.fillStyle=V('--a');x.fillText('detector count',sc(flagged)+4,12);x.lineWidth=1}
+['P','A','N'].forEach(i=>$(i).addEventListener('input',()=>startB(true)));document.querySelectorAll('#dz button[data-d]').forEach(b=>b.onclick=()=>{DZ=b.dataset.d;startB(false)});$('again').onclick=()=>go();
+
+/* ---- always-valid monitor ---- */
+const G=400,M=Float64Array.from({length:G},(_,j)=>(j+1)/(G+1)),LC=Math.log(20);let S,timer=null;
+function stop(){if(timer){cancelAnimationFrame(timer);timer=null}$('play').textContent='Play'}
+function resetC(){S={t:0,sum:0,lp:new Float64Array(G),lm:new Float64Array(G),al:new Uint8Array(G).fill(1),rate:[],cl:[],ch:[],wl:[],wh:[],aC:0,aW:0};stop();upC();drawC()}
+function stepC(){const q=S.t>=+$('sh').value?+$('r2').value:+$('r1').value,x=Math.random()<q/100?1:0;S.t++;S.sum+=x;const t=S.t,lam=Math.sqrt(2*Math.log(40)/(.25*t*Math.log(1+t)));let a=-1,b=-1;
+for(let j=0;j<G;j++){if(!S.al[j])continue;const m=M[j];S.lp[j]+=Math.log1p(Math.min(lam,.5/m)*(x-m));S.lm[j]+=Math.log1p(-Math.min(lam,.5/(1-m))*(x-m));const u=S.lp[j],v=S.lm[j],mx=Math.max(u,v);if(Math.log(.5)+mx+Math.log(Math.exp(u-mx)+Math.exp(v-mx))>=LC){S.al[j]=0;continue}if(a<0)a=j;b=j}
+const p=S.sum/t;let lo=p,hi=p;if(a>=0){lo=a>0?M[a-1]:0;hi=b<G-1?M[b+1]:1}
+const z2=3.8416,dn=1+z2/t,c=(p+z2/(2*t))/dn,hf=1.96*Math.sqrt(p*(1-p)/t+z2/(4*t*t))/dn,ag=+$('ag').value/100;S.rate.push(p);S.cl.push(lo);S.ch.push(hi);S.wl.push(c-hf);S.wh.push(c+hf);if(t>=10){if(!S.aC&&lo>ag)S.aC=t;if(!S.aW&&c-hf>ag)S.aW=t}}
+function upC(){$('m1').textContent=S.t;$('m2').textContent=S.t?(S.rate[S.t-1]*100).toFixed(1)+'%':'–';$('m5').textContent=S.aC||'none';$('m6').textContent=S.aW||'none'}
+function drawC(){if(!S)return;const[x,w,h]=cv('cc'),L=34,B=20,xm=Math.max(300,Math.ceil(S.t/100)*100+100),sx=v=>L+(w-L-8)*v/xm,sy=v=>(h-B)*(1-v/.8),ag=+$('ag').value/100,n=S.t,shv=+$('sh').value;
+x.strokeStyle=V('--line');x.fillStyle=V('--mute');for(let v=0;v<=.8;v+=.2){x.beginPath();x.moveTo(L,sy(v));x.lineTo(w,sy(v));x.stroke();x.fillText(Math.round(v*100)+'%',2,sy(v)+4)}for(let t=0;t<=xm;t+=100)x.fillText(t,sx(t)-8,h-4);
+if(n>=10){x.fillStyle=V('--c');x.globalAlpha=.22;x.beginPath();for(let i=9;i<n;i++)x[i==9?'moveTo':'lineTo'](sx(i+1),sy(S.ch[i]));for(let i=n-1;i>=9;i--)x.lineTo(sx(i+1),sy(S.cl[i]));x.fill();x.globalAlpha=1;x.strokeStyle=V('--a');x.lineWidth=1.2;x.setLineDash([4,3]);for(const A of[S.wl,S.wh]){x.beginPath();for(let i=9;i<n;i++)x[i==9?'moveTo':'lineTo'](sx(i+1),sy(Math.min(.8,A[i])));x.stroke()}x.setLineDash([])}
+x.strokeStyle=V('--ink');x.lineWidth=2;x.beginPath();S.rate.forEach((p,i)=>x[i?'lineTo':'moveTo'](sx(i+1),sy(p)));x.stroke();x.lineWidth=1.5;x.setLineDash([6,4]);x.strokeStyle=V('--bad');x.beginPath();x.moveTo(L,sy(ag));x.lineTo(w,sy(ag));x.stroke();x.strokeStyle=V('--mute');x.beginPath();x.moveTo(sx(shv),0);x.lineTo(sx(shv),h-B);x.stroke();x.setLineDash([]);
+x.fillStyle=V('--bad');x.fillText('agreed '+Math.round(ag*100)+'%',L+4,sy(ag)-4);x.fillStyle=V('--mute');x.fillText('shift',sx(shv)+4,12);
+for(const[a,c,l,o]of[[S.aC,'--c','confidence-sequence alarm',26],[S.aW,'--a','ordinary alarm',40]])if(a){x.strokeStyle=V(c);x.lineWidth=2;x.beginPath();x.moveTo(sx(a),0);x.lineTo(sx(a),h-B);x.stroke();x.fillStyle=V(c);x.fillText(l,sx(a)+4,o)}x.lineWidth=1}
+function loop(){const k=$('fast').getAttribute('aria-pressed')=='true'?20:4;for(let i=0;i<k&&S.t<2000;i++)stepC();upC();drawC();timer=S.t<2000?requestAnimationFrame(loop):null;if(!timer)$('play').textContent='Play'}
+$('play').onclick=()=>{if(timer)stop();else{$('play').textContent='Pause';loop()}};$('reset').onclick=resetC;$('fast').onclick=e=>e.target.setAttribute('aria-pressed',e.target.getAttribute('aria-pressed')!='true');
+[['r1','%'],['r2','%'],['sh',''],['ag','%']].forEach(([i,u])=>{const f=()=>$(i+'O').textContent=$(i).value+u;f();$(i).addEventListener('input',()=>{f();i=='ag'?drawC():resetC()})});
+
+/* ---- experiment tabs ---- */
+const TR=[['botometer-feedback',.698,.733],['cresci-2015',.982,.877],['cresci-2017',.983,.763],['cresci-rtbust',.884,.716],['cresci-stock',.874,.656],['gilani-2017',.809,.601],['midterm-2018',.993,.729]];
+const ARMS=[['Random, labeled only',.123],['Strata TF-IDF, labeled only',.122],['Random + PPI (LLM rubric)',.121],['Strata TF-IDF + PPI (generic)',.121],['Strata TF-IDF + PPI (rubric)',.12],['Strata LLM rubric, labeled',.115],['Strata LLM generic, labeled',.115],['Strata LLM rubric + PPI',.114]];
+const CAT=[['coding',193,37.3],['extraction',206,24.8],['humanities',198,22.7],['math',196,30.6],['reasoning',200,30],['roleplay',224,29],['stem',212,24.5],['writing',183,31.7]];
+const E={
+'Transfer':()=>({cap:'Section A3. Bot detector trained on the other six datasets (shared accounts removed), tested on the held-out one. Line = chance.',html:bar(TR.flatMap(r=>[[r[0]+' · own data',r[1],'b'],[r[0]+' · unseen',r[2],'a']]),1,f3,.5)+'<p class="note" style="margin:8px 0 0">At a 5% false-flag rate the unseen detector caught as few as 3.5% of bots (stock-2018). Botometer-feedback shows no drop, but its own-data score rests on 53 test accounts. Single features even flip direction between datasets, so “bot” is not one kind of account.</p>'}),
+'Bot share':()=>({cap:'Section A4. Average error when estimating the bot share from detector scores, full model. Line = the bar from the rescue attempt (75% of the guess).',html:bar([['Always guess the average',17.9,'c'],['Average score (PCC)',23.5,'a'],['EM prior adjustment',26.7,'a'],['Adjusted average',28.8,'a'],['Naive count',28.9,'a'],['Adjusted count',29.9,'a']],32,n1,13.4)+'<p class="note" style="margin:8px 0 0">The corrections assume error rates carry over to new data, and they do not: adjusted counts saturated at 0% or 100%. Five rescue variants (stable features, monotone models) all failed. That negative result is why the project moved to human-labeled samples.</p>'}),
+'Labeled sample':()=>({cap:'Phase 1. Prevalence intervals at 200 labels, averaged over seven bot datasets, 300 repetitions each.',html:tbl(['Design','Method','Coverage','Lowest dataset','Width (pts)'],[['Equal strata','labeled','0.948','0.933','10.8'],['Equal strata','PPI','0.946','0.927','10.8'],['Neyman','labeled','0.943','0.930','11.1'],['Neyman','PPI','0.943','0.930','11.1'],['Random','labeled','0.940','0.923','11.9'],['Random','PPI','0.948','0.940','11.0']])+'<p class="note" style="margin:8px 0 0">All six passed. Equal strata with the labeled-only estimator shipped, because PPI added 0.3% to 0.4% on top of strata (7% only under random sampling). Information from a detector goes in the design or in the estimator, and using both adds almost nothing.</p>'}),
+'LLM labeler':()=>({cap:'Phase 2. Qwen2.5-3B scoring three text datasets. Half-width in points at 200 labels; line = the 15% bar.',html:bar(ARMS.map((a,k)=>[a[0],a[1]*50,k>4?'c':'b']),7,pm,5.18)+tbl(['AUC','TF-IDF','LLM generic','LLM rubric'],[['LIAR','0.537','0.464','0.513'],['Fake and Real News','0.651','0.814','0.672'],['CoAID','0.487','0.647','0.874']])+'<p class="note" style="margin:8px 0 0">Failed: 5.9% narrower against a 15% bar, and on one dataset only. The model was at chance on LIAR and strong on CoAID. The rubric prompt changed widths by −0.2%. Coverage stayed 0.94 to 0.96 for every arm, so a bad scorer costs width, never validity.</p>'}),
+'Pilot planner':()=>({cap:'Phase 3. A 60-label random pilot picks the scorer for the remaining 140 labels. Half-width in points.',html:tbl(['Dataset','Random','TF-IDF strata','Pilot picks','Best known','Pilot chose'],[['CoAID','5.05','5.05','4.45','4.10','LLM rubric, 98%'],['Fake and Real News','6.75','6.50','6.00','5.60','LLM generic, 94%'],['LIAR','6.70','6.70','6.70','6.70','nothing, 65%'],['Pooled','6.17','6.09','5.72','5.47','']])+'<p class="note" style="margin:8px 0 0">About 6% narrower than the Phase 1 default, never wider than random sampling (worst −0.1%), and 4.6% wider than knowing the best scorer in advance. The first version was 18% wider than random with useless scorers; combining the pilot mean with the stage-two estimate fixed it. The gain is in-sample.</p>'}),
+'Judge':()=>({cap:'Phase 4. How often GPT-4 disagrees with the human majority on MT-Bench, with 95% intervals from all items. Line = overall 28.7%.',html:bar(CAT.map(c=>{const q=c[2]/100;return[c[0]+' (n='+c[1]+', ±'+(196*Math.sqrt(q*(1-q)/c[1])).toFixed(1)+')',c[2],'b']}),50,pc,28.7)+'<p class="note" style="margin:8px 0 0">The judge’s error rate is known to about ±5.9 points from 200 labels. At 80 labels per category the intervals overlap, so categories cannot be ranked at that budget. A dry run exposed count-based weights costing 7% width on small slices; variance-based weights fixed it.</p>'}),
+'Second judge':()=>({cap:'Step 1b. Can a cheap signal predict where GPT-4 errs? AUC against GPT-4’s real errors. Line = the 0.65 bar.',html:bar([['Closeness of the two models',.629,'a'],['Second judge (local 3B)',.552,'a'],['Hard category',.535,'a'],['Judge inconsistency',.515,'a'],['Turn',.508,'a'],['Length gap (wrong way)',.415,'a']],1,f3,.65)+tbl(['Check','Bar','Result','Verdict'],[['Risk-score AUC','0.65','0.552','fail'],['Error rate in top 20% by risk','1.5× base','1.46×','fail, narrowly'],['Narrower than random','10%','0.8% / 1.5%','fail'],['Validity and safety','0.92–0.98','0.933–0.958','pass']])}),
+'Monitoring':()=>({cap:'Phase 5. 1,000 bootstrap streams per scenario from the real MT-Bench judge errors.',html:bar([['Conf. sequence · true 28.7%',2.2,'c'],['Ordinary · true 28.7%',45,'bad'],['Conf. sequence · true 10%',2.6,'c'],['Ordinary · true 10%',41.9,'bad'],['Conf. sequence · true 50%',3.2,'c'],['Ordinary · true 50%',46,'bad']],50,pc,5)+'<p class="note" style="margin:6px 0 10px">Streams that missed the truth at some look; line = the 5% target.</p>'+bar([['Conf. sequence · 28.7→37.3%',49.2,'c'],['Ordinary · 28.7→37.3%',73.6,'bad'],['Conf. sequence · to 45%',99,'c'],['Ordinary · to 45%',79.6,'bad'],['Conf. sequence · to 55%',98.6,'c'],['Ordinary · to 55%',77.6,'bad']],100,pc)+'<p class="note" style="margin:6px 0 0">Shifts detected within 500 labels. The ordinary interval looks faster only because about 20% of its streams false-alarmed before any shift.</p>'})};
+let cur='Transfer';
+function tab(){const e=E[cur]();$('cap').textContent=e.cap;$('body').innerHTML=e.html;document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-pressed',b.textContent===cur))}
+Object.keys(E).forEach(k=>{const b=document.createElement('button');b.textContent=k;b.onclick=()=>{cur=k;tab()};$('tabs').appendChild(b)});
+
+/* ---- calculators + scorecard ---- */
+function calc(){const n=+$('H').value,hw=196*Math.sqrt(.287*.713/n)*Math.sqrt(1-n/1612);$('hO').textContent=n;$('hw').textContent=hw.toFixed(1)+' pts';$('hf').textContent=(n/1612*100).toFixed(0)+'%';
+const a=+$('B').value/100,p=.245*a/(.245*a+.755*(1-a));$('bO').textContent=(a*100)+'%';$('bp').textContent=(p*100).toFixed(1)+'%';$('bl').textContent=(p/.287).toFixed(2)+'×'}
+['H','B'].forEach(i=>$(i).addEventListener('input',calc));
+const SC=[['Audit checks (overlap, duplicates, shortcuts)','earned','3,351 shared accounts, conflicting duplicates, 22% identical rows'],['Labeled-sample estimator','earned','coverage 0.94–0.96; ±5.4 pts at 200 labels'],['Equal-strata planner','modest','about 9% narrower than random'],['PPI on top of strata','no','0.3–0.4% gain'],['Detector-based bot-share estimators','failed','nothing beat guessing the average'],['LLM labeler (3B)','failed','5.9% against a 15% bar'],['Definition agent (rubric)','failed','−0.2% width'],['Pilot-then-stratify planner','earned, in-sample','about 6% narrower, never worse than random'],['Judge reliability (MT-Bench)','earned','coverage 0.944–0.95; 28.7% disagreement'],['Second-judge risk score','failed','AUC 0.552 against 0.65'],['Continuous monitoring','earned','miss rate 2–3% against 42–46%']];
+$('sc').innerHTML='<tr><th>Component</th><th>Verdict</th><th>Evidence</th></tr>'+SC.map(r=>`<tr><td>${r[0]}</td><td style="color:var(--${r[1].startsWith('earned')?'c':r[1]=='modest'?'a':'bad'});font-weight:500">${r[1]}</td><td>${r[2]}</td></tr>`).join('');
+startB(true);resetC();tab();calc();
+</script>
+<style>.homepill{position:fixed;left:max(14px,env(safe-area-inset-left,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));z-index:50;font:500 13px "IBM Plex Sans",system-ui,sans-serif;text-decoration:none;color:var(--ink,#111);background:var(--panel,#fff);border:1px solid var(--line,#ccc);padding:7px 14px;border-radius:999px;box-shadow:0 4px 18px rgba(0,0,0,.18)}.homepill:hover{border-color:var(--ink,#111)}</style>
+<a class="homepill" href="../index.html">&larr; All projects</a>
+</body>
+</html>

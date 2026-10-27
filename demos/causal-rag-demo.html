@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Causal-RAG: cross-examining an LLM with causal evidence</title>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,700&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f2f6f3;--panel:#fbfdfb;--ink:#14231d;--mute:#53655d;--line:#d3e0d8;--A:#0e8a5f;--B:#2c63d6;--C:#c9780a;--D:#6d47d6;--bad:#b4472f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0d1612;--panel:#14211b;--ink:#e8f3ec;--mute:#a3b8ac;--line:#27382f;--A:#3dd6a0;--B:#7aa2ff;--C:#f4b24a;--D:#a58bff;--bad:#f08a70}}
+:root[data-theme="dark"]{--bg:#0d1612;--panel:#14211b;--ink:#e8f3ec;--mute:#a3b8ac;--line:#27382f;--A:#3dd6a0;--B:#7aa2ff;--C:#f4b24a;--D:#a58bff;--bad:#f08a70}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:900px;margin:0 auto;padding:32px 20px 56px}
+h1{font:700 clamp(28px,5vw,42px)/1.15 Newsreader,Georgia,serif;margin:0 0 12px;max-width:22ch}
+h2{font:700 22px/1.25 Newsreader,Georgia,serif;margin:32px 0 8px}
+.lede,.note{color:var(--mute);max-width:70ch}.note{font-size:14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:12px 0}
+.card{border-left:3px solid var(--A);padding-left:10px}.card b{display:block;font:700 24px/1.2 Newsreader,Georgia,serif;font-variant-numeric:tabular-nums}.card span{font-size:13px;color:var(--mute)}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+button{font:500 14px "IBM Plex Sans",sans-serif;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer}
+button[aria-pressed=true]{background:var(--A);border-color:var(--A);color:#fff}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) button[aria-pressed=true]{color:#0d1612}}
+:root[data-theme="dark"] button[aria-pressed=true]{color:#0d1612}
+button:focus-visible,input:focus-visible{outline:2px solid var(--bad);outline-offset:2px}
+label{display:block;font-weight:500;font-size:14px}label output{float:right;color:var(--mute)}
+input[type=range]{width:100%;accent-color:var(--A);margin-top:6px}
+.chk{display:flex;align-items:center;gap:8px;font-weight:400;margin:5px 0}.chk input{width:16px;height:16px;accent-color:var(--A)}
+svg{width:100%;height:auto;display:block;min-width:520px}.sw{overflow-x:auto}text{fill:var(--mute);font:11px "IBM Plex Sans",sans-serif}
+.bars div{display:grid;grid-template-columns:190px 1fr 92px;gap:8px;align-items:center;font-size:13px;margin:4px 0}
+.bt{position:relative;height:12px;background:color-mix(in srgb,var(--line) 60%,transparent);border-radius:3px}.bt i{position:absolute;top:0;left:0;height:12px;border-radius:3px}
+.bt u{position:absolute;top:-3px;width:2px;height:18px;background:var(--ink);opacity:.7}
+.bars span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:560px){.bars div{grid-template-columns:110px 1fr 70px;font-size:12px}}
+.agent{border-left:3px solid var(--A);padding-left:12px;margin-top:8px}.agent p{margin:0 0 6px}
+.badge{display:inline-block;font:700 20px Newsreader,Georgia,serif;padding:6px 18px;border-radius:8px;color:#fff;margin:6px 0}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.two ul{margin:6px 0 0;padding-left:18px;font-size:14px;color:var(--mute)}.two b.h{display:block;font:700 17px Newsreader,Georgia,serif;color:var(--ink)}
+.warn{border-left:3px solid var(--bad);padding-left:12px;font-size:14px;color:var(--mute);margin:10px 0}
+a{color:var(--B)}
+.homepill{position:fixed;left:max(14px,env(safe-area-inset-left,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));z-index:50;font:500 13px "IBM Plex Sans",system-ui,sans-serif;text-decoration:none;color:var(--ink,#111);background:var(--panel,#fff);border:1px solid var(--line,#ccc);padding:7px 14px;border-radius:999px;box-shadow:0 4px 18px rgba(0,0,0,.18)}.homepill:hover{border-color:var(--ink,#111)}
+</style>
+</head>
+<body>
+<main>
+<h1>Ask the model. Then cross-examine it.</h1>
+<p class="lede">Causal-RAG gives a language model causally adjusted evidence about real loans, then edits the applicant and the evidence to see whether the model reacts the way the causal estimates say it should. It ends with an auditable decision and a causal graph. Everything below is measured on real data: 589,099 Lending Club loans, real policy text and a real randomised trial.</p>
+<div class="cards">
+  <div class="card"><b>589,099</b><span>real 36-month loans, 2012 to 2015</span></div>
+  <div class="card"><b>0.86 to 1.18</b><span>CALF calibration on 3 of 4 clauses (1 = ideal)</span></div>
+  <div class="card" style="border-color:var(--bad)"><b>p = 0.59</b><span>a flags-only control vs the full causal pipeline</span></div>
+  <div class="card" style="border-color:var(--C)"><b>1.08 to 86</b><span>cliff index from plain LLM to label prompt (1 = smooth)</span></div>
+</div>
+
+<h2>Four agents, one audited decision</h2>
+<div class="panel">
+  <div class="row" id="ag" role="group" aria-label="Agents"></div>
+  <div class="sw"><svg id="pipe" viewBox="0 0 760 120" role="img" aria-label="The four agents in order"></svg></div>
+  <div class="agent" id="agd"></div>
+</div>
+
+<h2>Is the causal estimator any good on real loans?</h2>
+<div class="panel">
+  <div class="row" id="cl" role="group" aria-label="Clause"></div>
+  <div class="row"><button id="gd" aria-pressed="false">Also show graph-derived controls</button></div>
+  <div class="bars" id="cb"></div>
+  <div class="cards" id="cc"></div>
+  <p class="note" id="cn" style="margin-bottom:0"></p>
+</div>
+<div class="panel">
+  <p style="margin:0 0 6px"><b>Checked against randomisation.</b> In the Hillstrom e-mail experiment customers were assigned at random, so the experimental difference is a trustworthy answer.</p>
+  <div class="sw"><svg id="rct" viewBox="0 0 760 210" role="img" aria-label="Model average effects against the experimental interval"></svg></div>
+  <p class="note" style="margin-bottom:0">Every model recovers the average effect, but only the neural models rank customers by benefit: Qini 31 to 32 against 9.3 for the T-learner, and calibration slopes near 1 against 0.12.</p>
+</div>
+
+<h2>Does handing that evidence to an LLM help?</h2>
+<div class="panel">
+  <div class="row"><button id="m1" aria-pressed="true">AUROC</button><button id="m2" aria-pressed="false">Difference vs plain LLM (95% interval)</button></div>
+  <div id="au"></div>
+  <p class="note" style="margin-bottom:0" id="aun"></p>
+</div>
+<div class="panel">
+  <p style="margin:0 0 6px"><b>Take one ingredient away.</b> Each row is a paired comparison on the same 600 applicants (85 defaults). Rows that cross zero are not distinguishable.</p>
+  <div class="sw"><svg id="pw" viewBox="0 0 760 360" role="img" aria-label="Paired AUROC differences between prompt systems"></svg></div>
+  <p class="note" style="margin-bottom:0">Listing the applicable risk flags (0.668) is statistically indistinguishable from the full causal pipeline (0.678). The matched precedent and the CALF numbers each add nothing measurable on top of the flags.</p>
+</div>
+
+<h2>The cliff test</h2>
+<div class="panel">
+  <p style="margin:0 0 6px">Real risk changes smoothly across a cutoff like 25% DTI. Does the model's answer? For each clause the model is asked just below and just above the cutoff, and over an equally wide interval far from it.</p>
+  <div class="sw"><svg id="cdiag" viewBox="0 0 760 90" role="img" aria-label="Where the model is queried: across the cutoff and over a placebo interval"></svg></div>
+  <div class="row" id="cs" role="group" aria-label="System"></div>
+  <div class="bars" id="cbar"></div>
+  <div class="cards" id="cc2"></div>
+  <p class="note" id="cn2" style="margin-bottom:0"></p>
+</div>
+
+<h2>The audit rules, in your hands</h2>
+<div class="panel">
+  <label>Model margin relative to the decline threshold <output id="mO"></output><input id="mg" type="range" min="-4" max="4" step="0.1" value="0.4"></label>
+  <p class="note" style="margin:4px 0 8px">1 unit = the &ldquo;near the threshold&rdquo; band. Positive means the model leans to decline.</p>
+  <div class="two"><div id="fl"></div><div><div class="badge" id="dec"></div><p class="note" id="why" style="margin:4px 0 0"></p></div></div>
+</div>
+<div class="panel">
+  <p style="margin:0 0 6px"><b>What the audit did on 600 real applicants</b> (smooth-prompt audit, v1.2).</p>
+  <div class="bars" id="ad"></div>
+  <p class="note" style="margin:8px 0 6px">Flags raised:</p>
+  <div class="bars" id="af"></div>
+  <p class="note" style="margin-bottom:0">Default rate rises from approved to referred to declined, but the groups are small. Approving the referred cases as well would lift the approved-group default rate from 11.5% to 12.5%: referral removes about one point of risk. Most referrals come from thin matched evidence, not from detected inconsistency.</p>
+</div>
+
+<h2>Mistakes we found in our own work</h2>
+<div class="panel">
+  <div class="row" id="fx" role="group" aria-label="Problem"></div>
+  <div class="bars" id="fb"></div>
+  <p class="note" id="fn" style="margin-bottom:0"></p>
+</div>
+
+<h2>What this shows</h2>
+<div class="panel two">
+  <div><b class="h">What worked</b><ul><li>CALF's effect heterogeneity is well calibrated for FICO, loan-to-income and DTI, and checked against a real randomised trial.</li><li>Placebo, random-common-cause and subset refuters pass for every clause.</li><li>The audit tools caught our own errors: the flag-listing effect, an easy sign test, a winner's curse and a flawed cliff metric.</li></ul></div>
+  <div><b class="h">What did not</b><ul><li>No LLM variant is significantly better than the plain LLM; tabular models are at least as good.</li><li>Layering the covariates added nothing over a flat network, as in the CALF paper's insurance result.</li><li>Describing conditions as cutoffs makes the model's answer step-like; the label prompt jumps 86 times more across a cutoff than away from it.</li></ul></div>
+</div>
+
+<h2>Limitations</h2>
+<div class="warn">Clause effects are observational (E-values 1.8 to 2.1; utilization is fragile at 1.06). Lending Club contains funded loans only. The four cutoffs are analyst-defined: the retrieved policy text states none of them. The language-model comparison uses 600 applicants with 85 defaults, one 4-bit 7B model and single runs, so differences below about 0.05 AUROC are within noise. Nothing here is a lending decision system.</div>
+<p class="note">Code and write-up: <a href="https://github.com/Davuri124/Casual-RAG">Davuri124/Casual-RAG</a></p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const D={"calf":{"dti_gt25":{"models":{"CALF (layered)":[0.856,0.13],"CALF, paper attention":[0.527,0.092],"Flat MLP":[0.936,0.147],"LightGBM T-learner":[0.188,0.041],"CALF, graph-derived controls":[0.536,0.104]},"ate":0.0416,"out":0.175,"treated":0.205,"drmse":1.012},"fico_lt680":{"models":{"CALF (layered)":[0.917,0.111],"CALF, paper attention":[0.716,0.084],"Flat MLP":[1.09,0.118],"LightGBM T-learner":[0.155,0.04],"CALF, graph-derived controls":[0.565,0.086]},"ate":0.0405,"out":0.083,"treated":0.361,"drmse":0.825},"lti_gt20":{"models":{"CALF (layered)":[1.18,0.099],"CALF, paper attention":[1.473,0.108],"Flat MLP":[1.225,0.09],"LightGBM T-learner":[0.27,0.041],"CALF, graph-derived controls":[0.938,0.078]},"ate":0.0403,"out":0.061,"treated":0.427,"drmse":0.77},"util_gt75":{"models":{"CALF (layered)":[0.189,0.244],"CALF, paper attention":[0.441,0.244],"Flat MLP":[0.42,0.226],"LightGBM T-learner":[0.037,0.051],"CALF, graph-derived controls":[0.394,0.231]},"ate":0.0129,"out":0.295,"treated":0.214,"drmse":1.07}},"rct":{"exp":0.0588,"lo":0.0449,"hi":0.0728,"rows":[["CALF K=4 tokens (layered)",0.0686,30.7,0.9],["CALF K=1 (paper-as-written)",0.0674,31.3,1.06],["CALF flat (1 layer)",0.0657,31.7,1.09],["LightGBM T-learner",0.0592,9.3,0.12]]},"eval":{"dti_gt25":[2.07,1.92],"fico_lt680":[1.83,1.71],"lti_gt20":[1.87,1.76],"util_gt75":[1.32,1.06]},"auroc":[["bands_only",0.6466,0.0133,-0.0077,0.0365,0.222,0.118,0.029],["causal_graded_bands",0.6554,0.022,-0.0264,0.0751,0.36,0.118,0.042],["no_rag",0.6334,0.0,0.0,0.0,1.0,0.12,0.027],["vanilla_rag",0.6256,-0.0077,-0.0621,0.0451,0.768,0.12,0.04],["knn_rag",0.6388,0.0055,-0.0386,0.0559,0.774,0.119,0.036],["causal_rag",0.6777,0.0444,-0.0012,0.0891,0.06,0.117,0.027],["causal_rag_smooth",0.6663,0.0329,-0.013,0.0795,0.164,0.117,0.025],["causal_calf_only",0.6578,0.0244,-0.0137,0.0674,0.24,0.118,0.017],["causal_precedent_only",0.6696,0.0363,-0.0013,0.0742,0.062,0.117,0.038],["causal_conditions_only",0.668,0.0346,-0.001,0.0713,0.068,0.117,0.056],["causal_graded",0.6603,0.0269,-0.0226,0.0777,0.258,0.117,0.035],["LightGBM (tabular ceiling)",0.6907,0.0573,-0.0113,0.1274,0.106,0.115,0.03],["CALF factual risk (tabular)",0.7065,0.0732,0.0079,0.1389,0.028,0.114,0.028]],"pairs":[["causal_conditions_only","no_rag",0.0346,-0.001,0.0713,0.068],["causal_rag","causal_conditions_only",0.0098,-0.0278,0.0475,0.594],["causal_precedent_only","causal_conditions_only",0.0017,-0.0348,0.0343,0.908],["causal_calf_only","causal_conditions_only",-0.0102,-0.041,0.023,0.546],["causal_rag","causal_calf_only",0.02,-0.0064,0.0448,0.126],["causal_rag","causal_precedent_only",0.0081,-0.0231,0.0408,0.614],["causal_graded","causal_conditions_only",-0.0077,-0.0526,0.0414,0.796],["causal_graded","causal_rag_smooth",-0.006,-0.0414,0.0262,0.758],["bands_only","no_rag",0.0133,-0.0077,0.0365,0.222],["causal_graded_bands","no_rag",0.022,-0.0264,0.0751,0.36],["causal_graded_bands","causal_graded",-0.0049,-0.0194,0.0096,0.458],["causal_graded_bands","bands_only",0.0087,-0.0367,0.0599,0.684],["causal_graded_bands","causal_rag",-0.0224,-0.0703,0.0277,0.416]],"cliff":[["bands_only",595,0.1019,0.1389,0.73,0.63,0.84],["no_rag",595,0.0434,0.0401,1.08,0.81,1.49],["causal_graded_bands",595,0.1363,0.0588,2.32,1.89,2.9],["causal_graded",595,0.1372,0.0496,2.76,2.21,3.46],["causal_conditions_only",595,0.2965,0.0561,5.29,4.0,7.0],["causal_rag_smooth",595,0.3266,0.0038,86.04,53.3,172.94]],"audit":{"n":600,"approve":426,"refer":79,"decline":95,"da":0.115,"dr":0.1772,"dd":0.2316,"overall":0.1417,"if_all":0.1248,"flags":{"thin_overlap":162,"spurious_sensitive":39,"evidence_model_conflict":8,"evidence_ignored":5,"llm_calf_disagree":4}},"retr":{"dti":{"smd0":2.628,"thin0":0.98,"smd1":0.329,"thin1":0.247},"util":{"smd0":0.707,"thin0":0.647,"smd1":0.406,"thin1":0.337},"fico":{"smd0":0.677,"thin0":0.65,"smd1":0.349,"thin1":0.27},"lti":{"smd0":0.485,"thin0":0.483,"smd1":0.353,"thin1":0.267}}};
+const NM={no_rag:'Plain LLM',vanilla_rag:'Vanilla RAG',knn_rag:'kNN RAG',causal_rag:'Causal-RAG (v1.1 prompt)',causal_rag_smooth:'Smooth prompt (TRIGGERED label)',causal_calf_only:'CALF numbers only',causal_precedent_only:'Matched precedent only',causal_conditions_only:'Flags only',causal_graded:'Graded prompt',bands_only:'Bands only',causal_graded_bands:'Graded + bands','CALF factual risk (tabular)':'CALF risk (tabular)','LightGBM (tabular ceiling)':'LightGBM (tabular)'};
+const nm=s=>NM[s]||s,fx=(v,d)=>(v>=0?'+':'\u2212')+Math.abs(v).toFixed(d);
+function bars(id,rows,o){o=o||{};const mn=o.min||0,mx=o.max||Math.max(...rows.map(r=>r[1]));
+ $(id).innerHTML=rows.map(r=>`<div><span>${r[0]}</span><span class="bt"><i style="width:${Math.max(0.5,(r[1]-mn)/(mx-mn)*100).toFixed(1)}%;background:var(--${r[2]||'A'})"></i>${o.mark!=null?`<u style="left:${((o.mark-mn)/(mx-mn)*100).toFixed(1)}%"></u>`:''}</span><span>${o.f?o.f(r):r[1]}</span></div>`).join('')}
+function forest(id,rows,x0,x1,ticks,W,H,lw){const L=lw,R=84,T=14,rh=(H-T-26)/rows.length,X=v=>L+(v-x0)/(x1-x0)*(W-L-R);let s='';
+ ticks.forEach(t=>s+=`<line x1="${X(t)}" x2="${X(t)}" y1="${T}" y2="${H-24}" stroke="var(--line)"/><text x="${X(t)}" y="${H-8}" text-anchor="middle">${t>0?'+':''}${t}</text>`);
+ s+=`<line x1="${X(0)}" x2="${X(0)}" y1="${T}" y2="${H-24}" stroke="var(--ink)" stroke-width="1.5"/>`;
+ rows.forEach((r,i)=>{const y=T+rh*i+rh/2,sig=r[2]>0||r[3]<0;s+=`<text x="${L-8}" y="${y+4}" text-anchor="end" style="fill:var(--ink)">${r[0]}</text><line x1="${X(r[2])}" x2="${X(r[3])}" y1="${y}" y2="${y}" stroke="var(--${sig?'A':'mute'})" stroke-width="3" opacity="${sig?1:.55}"/><circle cx="${X(r[1])}" cy="${y}" r="4.5" fill="var(--${sig?'A':'mute'})"/><text x="${W-R+10}" y="${y+4}">${r[4]}</text>`});
+ $(id).innerHTML=s}
+
+/* ---- agents */
+const AG=[['Retriever','Finds similar past loans, then matches treated and control loans like-for-like in a balance space defined by the causal graph. The result is matched precedent, not a bag of lookalikes.','Thin evidence sets fell from 98% to 25% (DTI) after the matching fix.'],
+['Causal Attribution (CALF)','Estimates, for this applicant, how much each underwriting clause changes the probability of default. Four layers (roots, soil, leaves, choice) follow the causal order of a loan application.','Calibration slope 0.86 to 1.18 on three clauses; checked against a randomised trial.'],
+['Counterfactual Perturbation','Moves a clause field to the other regime, reverses the evidence, changes irrelevant fields, and checks whether the language model moves the way CALF says it should.','2,090 material flip pairs tested; sign agreement is high but an easy test (a trivial rule scores 0.68).'],
+['Synthesis & Audit','Applies fixed rules to the test results: APPROVE, DECLINE or REFER_TO_HUMAN, with a causal graph, a JSON record and a written rationale kept separate from the audit table.','Default rate: approved 11.5%, referred 17.7%, declined about 23%.']];
+let ai=0;
+function agent(){let s='';AG.forEach((a,i)=>{const x=10+i*190,on=i===ai;s+=`<rect x="${x}" y="22" width="160" height="62" rx="10" fill="${on?'var(--A)':'none'}" stroke="var(--A)" stroke-width="2"/><text x="${x+80}" y="48" text-anchor="middle" style="fill:${on?'#fff':'var(--ink)'};font-weight:500;font-size:12.5px">${i+1}. ${a[0].split(' (')[0].split(' & ')[0]}</text><text x="${x+80}" y="66" text-anchor="middle" style="fill:${on?'#fff':'var(--mute)'};font-size:10.5px">${['dense + matched','CALF effects','LLM cross-exam','decision + DAG'][i]}</text>`;if(i<3)s+=`<path d="M${x+162} 53 H${x+188}" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/>`});
+ $('pipe').innerHTML=`<defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6z" fill="var(--ink)"/></marker></defs>`+s;
+ $('agd').innerHTML=`<p><b>${AG[ai][0]}.</b> ${AG[ai][1]}</p><p class="note" style="margin:0">${AG[ai][2]}</p>`;
+ document.querySelectorAll('#ag button').forEach((b,i)=>b.setAttribute('aria-pressed',i===ai))}
+AG.forEach((a,i)=>{const b=document.createElement('button');b.textContent=a[0].split(' (')[0];b.onclick=()=>{ai=i;agent()};$('ag').appendChild(b)});
+
+/* ---- CALF */
+const CN={dti_gt25:'DTI above 25%',util_gt75:'Utilization above 75%',fico_lt680:'FICO below 680',lti_gt20:'Loan above 20% of income'};
+const NOTE={dti_gt25:'About 20% of loans exceed 25% DTI. The original Fannie Mae 36% cutoff would have treated only 1.5% of loans: too few to identify an effect, so the clause was redefined (and the finding kept).',
+util_gt75:'Weak: no usable heterogeneity signal (slope 0.19 with standard error 0.24) and an E-value of 1.06, so almost any confounder could explain the average effect.',
+fico_lt680:'Close to ideal. The paper-style attention variant and the flat MLP are within noise of the layered model; dropping possible mediators (graph-derived controls) lowers the slope to 0.57.',
+lti_gt20:'Slightly under-dispersed (1.18). Layered, paper-attention and flat variants have the same error to three decimals: layering did not help, as in the CALF paper\u2019s own insurance result.'};
+let cl='fico_lt680',gd=false;
+function calf(){const c=D.calf[cl];let rows=Object.entries(c.models).filter(([k])=>gd||!k.includes('graph'));
+ $('cb').innerHTML=rows.map(([k,v])=>`<div><span>${k}</span><span class="bt"><i style="width:${Math.min(100,v[0]/1.6*100).toFixed(1)}%;background:var(--${k.startsWith('CALF')?'A':k.startsWith('Flat')?'C':'D'})"></i><u style="left:${(1/1.6*100).toFixed(1)}%"></u></span><span>${v[0].toFixed(2)} \u00b1 ${v[1].toFixed(2)}</span></div>`).join('');
+ const ev=D.eval[cl];$('cc').innerHTML=`<div class="card"><b>${fx(c.ate*100,1)} pp</b><span>effect on default, doubly-robust</span></div><div class="card"><b>${(c.treated*100).toFixed(1)}%</b><span>of loans inside the clause</span></div><div class="card"><b>${ev[0].toFixed(2)}</b><span>E-value (CI bound ${ev[1].toFixed(2)})</span></div>`;
+ $('cn').textContent='Bars: calibration slope of predicted vs observed heterogeneity; the tick marks 1 = ideal. '+NOTE[cl];
+ document.querySelectorAll('#cl button').forEach((b,i)=>b.setAttribute('aria-pressed',Object.keys(CN)[i]===cl));$('gd').setAttribute('aria-pressed',gd)}
+Object.keys(CN).forEach(k=>{const b=document.createElement('button');b.textContent=CN[k];b.onclick=()=>{cl=k;calf()};$('cl').appendChild(b)});
+$('gd').onclick=()=>{gd=!gd;calf()};
+function rct(){const W=760,L=190,R=110,x0=0.04,x1=0.08,X=v=>L+(v-x0)/(x1-x0)*(W-L-R),r=D.rct;let s='';
+ [0.04,0.05,0.06,0.07,0.08].forEach(t=>s+=`<line x1="${X(t)}" x2="${X(t)}" y1="12" y2="180" stroke="var(--line)"/><text x="${X(t)}" y="198" text-anchor="middle">${t.toFixed(2)}</text>`);
+ s+=`<rect x="${X(r.lo)}" y="12" width="${X(r.hi)-X(r.lo)}" height="168" fill="var(--A)" opacity=".13"/><line x1="${X(r.exp)}" x2="${X(r.exp)}" y1="12" y2="180" stroke="var(--A)" stroke-width="2" stroke-dasharray="4 4"/><text x="${X(r.exp)}" y="9" text-anchor="middle" style="fill:var(--A)">experiment ${r.exp.toFixed(3)} [${r.lo.toFixed(3)}, ${r.hi.toFixed(3)}]</text>`;
+ r.rows.forEach((m,i)=>{const y=42+i*38,c=m[0].startsWith('LightGBM')?'D':'A';s+=`<text x="${L-8}" y="${y+4}" text-anchor="end" style="fill:var(--ink)">${m[0].replace(' tokens','')}</text><circle cx="${X(m[1])}" cy="${y}" r="6" fill="var(--${c})"/><text x="${X(m[1])+10}" y="${y+4}" style="fill:var(--ink)">${m[1].toFixed(4)}</text><text x="${W-R+14}" y="${y+4}">Qini ${m[2]}</text>`});
+ $('rct').innerHTML=s}
+
+/* ---- AUROC */
+let am=1;
+function auroc(){const rows=D.auroc.slice();
+ if(am===1){rows.sort((a,b)=>b[1]-a[1]);$('au').innerHTML='<div class="bars" id="aub"></div>';bars('aub',rows.map(r=>[nm(r[0]),r[1],/tabular|LightGBM/.test(r[0])?'D':(r[0]==='no_rag'?'C':'A')]),{min:0.5,max:0.74,mark:D.auroc.find(r=>r[0]==='no_rag')[1],f:r=>r[1].toFixed(3)});
+  $('aun').textContent='Amber = plain LLM (the tick marks its level). Purple = tabular references. 600 held-out 2015 applicants, 85 defaults.'}
+ else{const rr=rows.filter(r=>r[0]!=='no_rag').sort((a,b)=>b[2]-a[2]);$('au').innerHTML='<div class="sw"><svg id="afo" viewBox="0 0 760 330"></svg></div>';
+  forest('afo',rr.map(r=>[nm(r[0]),r[2],r[3],r[4],`p = ${r[5].toFixed(2)}`]),-0.1,0.16,[-0.1,-0.05,0,0.05,0.1,0.15],760,330,200);
+  $('aun').textContent='Paired bootstrap difference in AUROC vs the plain LLM. Only the tabular CALF risk has an interval entirely above zero (green): no language-model system clearly beats the plain LLM.'}
+ $('m1').setAttribute('aria-pressed',am===1);$('m2').setAttribute('aria-pressed',am===2)}
+$('m1').onclick=()=>{am=1;auroc()};$('m2').onclick=()=>{am=2;auroc()};
+function pairs(){forest('pw',D.pairs.map(p=>[nm(p[0])+' \u2212 '+nm(p[1]),p[2],p[3],p[4],`p = ${p[5].toFixed(2)}`]),-0.1,0.1,[-0.1,-0.05,0,0.05,0.1],760,360,330)}
+
+/* ---- cliff */
+const CX={no_rag:'The plain LLM reasons about the number: it changes about as much across the cutoff as anywhere else.',bands_only:'Only band tables and no cutoff wording: smooth. The answer follows the value, not a label.',causal_graded:'No TRIGGERED word; each condition shows its value and distance to the cutoff. A mild cliff remains, tied to the cutoff and regime wording.',causal_graded_bands:'The graded prompt plus band tables. Slightly lower, but a mild cliff remains.',causal_conditions_only:'Only the list of triggered flags. The answer jumps when a flag appears.',causal_rag_smooth:'Designed to remove the cliff, it is the cliffiest: almost flat until the TRIGGERED label flips, then a jump of about 0.33 in P(decline).'};
+let cs='no_rag';
+function verdict(i,lo){return i<=1.5&&lo<=1.3?['smooth','A']:i<=3.5?['mild cliff','C']:['cliff','bad']}
+function cliff(){const r=D.cliff.find(x=>x[0]===cs),v=verdict(r[4],r[5]);
+ bars('cbar',[['Change across the cutoff',r[2],'C'],['Change over an equal interval away from it',r[3],'D']],{max:0.35,f:x=>'\u0394P = '+x[1].toFixed(3)});
+ $('cc2').innerHTML=`<div class="card" style="border-color:var(--${v[1]})"><b>${r[4]<10?r[4].toFixed(2):Math.round(r[4])}</b><span>cliff index (1 = smooth)</span></div><div class="card"><b>[${r[5]<10?r[5].toFixed(2):Math.round(r[5])}, ${r[6]<10?r[6].toFixed(2):Math.round(r[6])}]</b><span>95% interval</span></div><div class="card" style="border-color:var(--${v[1]})"><b>${v[0]}</b><span>${r[1]} pairs, 150 applicants</span></div>`;
+ $('cn2').textContent=CX[cs]+' Cliff index = the first bar divided by the second.';
+ document.querySelectorAll('#cs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===cs))}
+D.cliff.slice().sort((a,b)=>a[4]-b[4]).forEach(r=>{const b=document.createElement('button');b.textContent=nm(r[0]);b.dataset.s=r[0];b.onclick=()=>{cs=r[0];cliff()};$('cs').appendChild(b)});
+function cdiag(){const X=v=>40+v*680,pts=[[0.05,'thr \u2212 5d'],[0.2,'thr \u2212 3d'],[0.62,'thr \u2212 d'],[0.78,'thr + d']];
+ let s=`<line x1="40" x2="720" y1="50" y2="50" stroke="var(--ink)" stroke-width="2"/><line x1="${X(0.7)}" x2="${X(0.7)}" y1="22" y2="62" stroke="var(--bad)" stroke-width="2" stroke-dasharray="4 4"/><text x="${X(0.7)}" y="16" text-anchor="middle" style="fill:var(--bad)">cutoff</text>`;
+ pts.forEach(p=>s+=`<circle cx="${X(p[0])}" cy="50" r="5" fill="var(--ink)"/><text x="${X(p[0])}" y="76" text-anchor="middle">${p[1]}</text>`);
+ s+=`<path d="M${X(0.05)} 38 H${X(0.2)}" stroke="var(--D)" stroke-width="4"/><text x="${X(0.125)}" y="32" text-anchor="middle" style="fill:var(--D)">placebo interval</text><path d="M${X(0.62)} 38 H${X(0.78)}" stroke="var(--C)" stroke-width="4"/><text x="${X(0.55)}" y="32" text-anchor="end" style="fill:var(--C)">across the cutoff</text>`;$('cdiag').innerHTML=s}
+
+/* ---- audit rules */
+const FL=[['llm_calf_disagree','the LLM moved opposite to CALF\u2019s sign'],['evidence_model_conflict','matched precedent and CALF disagree'],['thin_overlap','matched evidence is thin or unbalanced'],['evidence_ignored','the LLM moved the wrong way when the evidence was reversed'],['spurious_sensitive','the decision changed when only irrelevant fields changed']];
+$('fl').innerHTML=FL.map((f,i)=>`<label class="chk"><input type="checkbox" id="f${i}"><span><b style="font-weight:500">${f[0]}</b><br><span style="color:var(--mute);font-size:12.5px">${f[1]}</span></span></label>`).join('')+`<label class="chk"><input type="checkbox" id="fi"><span><b style="font-weight:500">policy_unsupported</b> <span style="color:var(--mute);font-size:12.5px">(informational: never counts)</span></span></label>`;
+function rule(){const m=+$('mg').value,n=FL.filter((f,i)=>$('f'+i).checked).length,base=m>=0?'DECLINE':'APPROVE';$('mO').textContent=fx(m,1);
+ const ref=n>=2||(n>=1&&Math.abs(m)<1),d=ref?'REFER_TO_HUMAN':base;
+ const b=$('dec');b.textContent=d;b.style.background=`var(--${d==='APPROVE'?'A':d==='DECLINE'?'bad':'C'})`;
+ $('why').textContent=ref?(n>=2?`${n} counted flags: two or more always send the case to a human.`:'One counted flag and the margin is within the band of the threshold: a human reviews it.'):`Base decision (${base}) stands: ${n===0?'no counted flags.':'one flag, but the margin is clearly on one side.'}`}
+$('mg').addEventListener('input',rule);document.querySelectorAll('#fl input').forEach(i=>i.addEventListener('change',rule));
+function audit(){const a=D.audit;bars('ad',[['Approved ('+a.approve+') default rate',a.da,'A'],['Referred to human ('+a.refer+')',a.dr,'C'],['Declined ('+a.decline+', derived)',a.dd,'bad'],['All 600 applicants',a.overall,'D']],{max:0.3,f:r=>(r[1]*100).toFixed(1)+'%'});
+ bars('af',Object.entries(a.flags).map(([k,v])=>[k,v,'D']),{max:170,f:r=>r[1]})}
+
+/* ---- fixes */
+const FX=[['DTI cutoff',()=>{const c=D.calf.dti_gt25;return[[['Loans inside the clause, 36% cutoff',1.5,'bad'],['Loans inside the clause, 25% cutoff',c.treated*100,'A'],['Test loans outside overlap, 36%',85,'bad'],['Test loans outside overlap, 25%',c.out*100,'A']],{max:100,f:r=>r[1].toFixed(1)+'%'},'Fannie Mae\u2019s 36% DTI guideline binds on 1.5% of these loans, so the effect could not be identified (CALF calibration slope \u22120.16). The clause became 25% and is labelled analyst-defined; the rarity of the 36% cutoff is itself a finding.']}],
+['Evidence balance',()=>{const k=Object.keys(D.retr),rows=[];k.forEach(c=>{rows.push([c.toUpperCase()+' before',D.retr[c].thin0*100,'bad']);rows.push([c.toUpperCase()+' after',D.retr[c].thin1*100,'A'])});return[rows,{max:100,f:r=>r[1].toFixed(0)+'%'},'Share of matched-evidence sets flagged thin. Matching inside a text-similarity pool left most evidence unbalanced; adding nearest treated and control loans across the whole index cut the median imbalance (SMD) from 0.49 to 2.63 down to about 0.33 to 0.41.']}],
+['Small sample',()=>[[['300 applicants (42 defaults): Causal-RAG',0.707,'A'],['300 applicants: plain LLM',0.645,'C'],['600 applicants (85 defaults): Causal-RAG',0.678,'A'],['600 applicants: plain LLM',0.633,'C']],{min:0.5,max:0.75,f:r=>r[1].toFixed(3)},'With 300 applicants the gain looked significant (p = 0.046). With 600 it shrank to +0.044 (p = 0.06): a winner\u2019s curse. Intervals are now reported everywhere.']],
+['Cliff metric',()=>[[['Smooth prompt: first metric (move to just across the cutoff)',1.0,'C'],['Smooth prompt: local cliff test',86,'bad'],['Plain LLM: local cliff test',1.08,'A']],{max:90,f:r=>r[1]<10?r[1].toFixed(2):Math.round(r[1])},'The first \u201cboundary flip\u201d moved a field to just across its cutoff from wherever it was, so it was confounded by move size and made the smooth prompt look cliff-free. The local test, with an equal-width placebo interval, showed the opposite and the earlier reading was retracted.']]];
+let fi=0;
+function fix(){const f=FX[fi][1]();bars('fb',f[0],f[1]);$('fn').textContent=f[2];document.querySelectorAll('#fx button').forEach((b,i)=>b.setAttribute('aria-pressed',i===fi))}
+FX.forEach((f,i)=>{const b=document.createElement('button');b.textContent=f[0];b.onclick=()=>{fi=i;fix()};$('fx').appendChild(b)});
+
+agent();calf();rct();auroc();pairs();cliff();cdiag();rule();audit();fix();
+</script>
+<a class="homepill" href="../index.html">&larr; All projects</a>
+</body>
+</html>

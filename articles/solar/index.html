@@ -1,0 +1,107 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>I Built a Seven-Agent Misinformation Detector Named After the Planets. Then I Audited It, and It Failed. · Agnes Teresa Davuri</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f7;--panel:#fff;--ink:#172036;--mute:#586178;--line:#d3d9e6;--r:#3447c9;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1424;--panel:#171d33;--ink:#eaeefb;--mute:#a1a9c4;--line:#2a3252;--r:#8fa0ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:400 18px/1.75 "Public Sans",system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:28px 20px 72px}a{color:var(--r)}
+.back{font-size:14px;text-decoration:none}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;line-height:1.15}h1{font-size:clamp(30px,6vw,46px);margin:20px 0 10px}h2{font-size:28px;margin:44px 0 8px}h3{font-size:22px}
+.sub{color:var(--mute);font-style:italic;margin:0 0 24px}
+img{max-width:100%;height:auto;border-radius:4px;display:block;margin:24px auto 6px;background:#fff}
+em{color:var(--mute)}blockquote{margin:20px 0;padding-left:16px;border-left:3px solid var(--r);color:var(--mute)}
+table{border-collapse:collapse;display:block;overflow-x:auto;font-size:15px}td,th{border:1px solid var(--line);padding:6px 10px;text-align:left}
+code{background:var(--panel);padding:1px 5px;border-radius:3px;font-size:.9em}
+</style></head><body><main>
+<a class="back" href="../../index.html#articles">← All articles</a>
+<h1>I Built a Seven-Agent Misinformation Detector Named After the Planets. Then I Audited It, and It Failed.</h1><p class="sub">It began as a speech to 10th graders. It ended as a lesson in how a good score can hide a broken experiment.</p>
+<p><img alt="SOLAR: a seven-agent ensemble named after the planets" src="images/01-hero-solar-cover.png" /></p>
+<p>I first imagined SOLAR in a speech to a class of 10th-grade students. I used the solar system as a metaphor for building things well: Mercury is fast, Venus is trustworthy, Earth is grounded in facts, Mars is tough, Jupiter is strong, Saturn has extra layers, and Uranus is the odd one that sees what others miss.</p>
+<p>Then I realized each planet could be a real component of a misinformation detector.</p>
+<p><img alt="Seven specialised agents, one solar system" src="images/02-seven-agents.png" /></p>
+<h4>The system</h4>
+<p>Seven agents each look at a post from a different angle and vote:</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Job</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mercury</td>
+<td>Fast first pass</td>
+<td>Word-frequency model</td>
+</tr>
+<tr>
+<td>Venus</td>
+<td>Who is speaking?</td>
+<td>Account credibility and follower graph</td>
+</tr>
+<tr>
+<td>Earth</td>
+<td>Are the facts real?</td>
+<td>Wikidata lookups</td>
+</tr>
+<tr>
+<td>Mars</td>
+<td>Does it survive tampering?</td>
+<td>Perturbs the text and checks consistency</td>
+</tr>
+<tr>
+<td>Jupiter</td>
+<td>Strongest model</td>
+<td>BERT plus two tree models</td>
+</tr>
+<tr>
+<td>Saturn</td>
+<td>Account behavior and style</td>
+<td>50 features in five "rings"</td>
+</tr>
+<tr>
+<td>Uranus</td>
+<td>What is new?</td>
+<td>Gemini LLM, zero-shot</td>
+</tr>
+</tbody>
+</table>
+<p>A fusion engine, borrowing the free-energy idea from physics, weights each vote by the agent's reliability and its confidence. A case the agents cannot settle is sent to a human. Every vote is logged so a decision can be audited.</p>
+<p>Mercury was meant to be the efficient one: it was confident on 68.5% of test cases, so I told myself the heavy agents could be skipped for those.</p>
+<p><img alt="Per-agent performance on Cresci-2017. Uranus, the bar near 0.45, had silently never run." src="images/03-per-agent-performance.png" /></p>
+<h4>The headline</h4>
+<p>On the Cresci-2017 Twitter bot benchmark, the fused system scored F1 0.9831 and AUC 0.9987, ahead of the best classical baseline (SVM, 0.9648). By any normal standard, it was done.</p>
+<p><img alt="Mercury was confident on 68.5% of cases. That is a confidence rate, not a measured saving" src="images/04-mercury-cascade.png" /></p>
+<h4>Then I audited my own work</h4>
+<p>I wrote a list of everything that bothered me, and it was long.</p>
+<ul>
+<li><strong>Uranus had been broken the whole time.</strong> Its score was an F1 of 0.449, an AUC of exactly 0.50. A library I used had been retired mid-project, and my free API quota ran out, so its calls quietly fell back to a default answer. It had not failed; it had never really run. All 200 of its test responses were fallbacks.</li>
+<li><strong>Half the ablation said the system did not need its parts.</strong> Removing Mercury, Mars or Uranus changed fusion F1 by exactly zero, and removing one more agent slightly <em>improved</em> it. Only three agents carried the signal, and the best single agent alone scored 0.9826 against the fused 0.9831. "All seven agents contribute" was not something I could say with a straight face.</li>
+<li><strong>The compute saving was never measured.</strong> The 68.5% was how often Mercury was confident. The fusion step still ran every agent, and I recorded no timings.</li>
+<li><strong>A suspicious number.</strong> When I trained every baseline on one dataset and tested on another, all seven scored an identical F1 of 0.3359, to four decimals. Seven different models do not do that. It means something is broken in my evaluation, not that models are brittle, and I stopped treating it as a finding.</li>
+<li><strong>A second dataset that behaved oddly.</strong> On 422 news articles, Mercury scored an AUC of 0.419, worse than a coin flip.</li>
+<li><strong>The benchmark was not the benchmark.</strong> My Cresci-2017 sample had 4,465 accounts at 22% bots. The full benchmark has 14,368 accounts at 75.8% bots, so my numbers were not comparable to anyone else's.</li>
+<li><strong>A bug I had already fixed once.</strong> An early Venus run scored 0.0% accuracy because my train-test split put no genuine accounts in the test set. That is the kind of mistake that makes a result look either terrible or perfect.</li>
+</ul>
+<p>None of this meant the system was useless. It meant my first draft claims were bigger than my evidence. The audit log is genuinely useful, but "seven necessary agents" was a story I liked more than a result I had earned.</p>
+<h4>What I did next</h4>
+<p>The audit changed my question. It stopped being "how good is my detector?" and became "can you trust <em>any</em> detector on your own data, and how would you find out cheaply?"</p>
+<p><strong>1. Detectors do not transfer.</strong> I trained bot detectors on six datasets and tested them on the seventh. On six of the seven, the AUC fell by 0.11 to 0.27. At a 5% false-flag rate, a detector caught as few as 3.5% of the bots on data it had never seen. Part of the problem is the word "bot": the same feature, like how much an account tweets, points in opposite directions in different datasets.</p>
+<p><strong>2. You cannot fix it by counting.</strong> I tried five standard methods for estimating the share of bots in a new group from a detector. Plain counting under-estimated by about 29 points, the corrected versions jumped to 0% or 100%, and nothing beat the lazy answer of always guessing the average (17.9 points of error). Stable features and simpler models did not rescue it.</p>
+<p><strong>3. A small random human sample does.</strong> Labeling about 200 randomly chosen accounts gave a 95% interval about 5.4 points either side, a typical error of 2.7 points against 28.9 for counting what the detector flagged, and the intervals covered the truth 93 to 96% of the time, as promised. Sample size drove accuracy, not detector quality.</p>
+<p><strong>4. Not everything worked.</strong> A small language model as a labeler was at chance on political claims and good on COVID news, and did not clear the bar I had set in advance (5.9% narrower intervals against a 15% target). A short pilot that picks which scorer to trust was about 6% narrower and never worse than random sampling, but I designed it after seeing the same datasets, so that gain is in-sample.</p>
+<p><strong>5. The same idea audits LLM judges.</strong> On 1,612 MT-Bench comparisons, GPT-4 disagreed with the human majority 28.7% of the time (22.7% on humanities, 37.3% on coding), a rate you can pin down to about 6 points with only 200 human labels. A second, weaker model as an error flag failed (AUC 0.552 against a bar of 0.65), which the maths predicts: when a weaker judge disagrees with a stronger one, the weaker one is usually the wrong one.</p>
+<p><strong>6. Monitoring.</strong> If you check an ordinary interval after every label, it misses the truth in 42 to 46% of streams. A betting-based confidence sequence missed in only 2 to 3%, at about 1.5 times the width. I turned the methods into two browser tools, one to check a detector with a small labeled sample and one to monitor a judge over time.</p>
+<p>Two limits matter. In every simulation, the dataset's own label played the human reviewer, which is the best case, because real reviewers make mistakes. And the monitoring results use bootstrap streams with constructed shifts, not real drift over time. I fixed the success bar before every run, and I am reporting the ones that failed.</p>
+<h4>What I would tell you</h4>
+<ol>
+<li>When every number looks great, audit the experiment before you celebrate.</li>
+<li>An identical score across different models is a bug alert.</li>
+<li>A component that has never really run cannot be credited, or blamed.</li>
+<li>Use a metaphor to explain a design, but let evidence justify it.</li>
+<li>A few hundred random human labels beat every automatic estimate I tried.</li>
+</ol>
+<p>Code: <a href="https://github.com/Davuri124/SOLAR">github.com/Davuri124/SOLAR</a></p>
+</main></body></html>
